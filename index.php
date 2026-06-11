@@ -33,13 +33,26 @@ switch ($page) {
         require_once 'views/dashboard/index.php';
         break;
 
-    // — próximas rutas que iremos agregando —
-    // case 'empleados': ...
-    // case 'solicitudes': ...
-    // case 'evaluaciones': ...
+    case 'empleados':
+    require_once 'controllers/EmpleadoController.php';
+    $ctrl = new EmpleadoController($pdo);
+    $ctrl->manejar();
+    break;
+
+    case 'solicitudes':
+    require_once 'controllers/SolicitudController.php';
+    $ctrl = new SolicitudController($pdo);
+    $ctrl->manejar();
+    break;
+
+    case 'evaluaciones':
+        require_once 'controllers/EvaluacionController.php';
+        $ctrl = new EvaluacionController($pdo);
+        $ctrl->manejar();
+    break;
 
     default:
         http_response_code(404);
         echo "<h1>Página no encontrada</h1>";
-        break;
+    break;
 }
