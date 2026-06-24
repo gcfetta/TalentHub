@@ -112,9 +112,16 @@ class SolicitudLicenciaModel {
         }
     }
 
-    // Cambiar estado (Aprobar / Rechazar) — con auditoría
+    // Cambiar estado (Aprobar / Rechazar) — con auditoría ATÓMICA
     public function cambiarEstado(int $nro, string $estado_anterior, string $estado_nuevo, string $observacion, int $supervisor_legajo): void {
-        $this->registrarEstado($nro, $estado_anterior, $estado_nuevo, $observacion, $supervisor_legajo);
+        $this->pdo->beginTransaction();
+        try {
+            $this->registrarEstado($nro, $estado_anterior, $estado_nuevo, $observacion, $supervisor_legajo);
+            $this->pdo->commit();
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 
     private function registrarEstado(int $nro, ?string $anterior, string $nuevo, string $obs, int $supervisor): void {
