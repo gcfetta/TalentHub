@@ -80,56 +80,39 @@ class SolicitudLicenciaModel {
         return $stmt->fetchAll();
     }
 
-    // Crear solicitud + primer registro de auditoría (todo en transacción)
+    // Crear solicitud — invoca el procedimiento almacenado (valida días disponibles
+    // y registra el primer estado 'Pendiente' de forma atómica en la BD)
     public function crear(array $datos, int $supervisor_legajo): int {
-        $this->pdo->beginTransaction();
-        try {
-            $stmt = $this->pdo->prepare("
-                INSERT INTO Solicitud_Licencia
-                    (fecha_solicitud, fecha_inicio, fecha_fin, dias_solicitados, legajo, tipo_lic_cod)
-                VALUES
-                    (:fecha_solicitud, :fecha_inicio, :fecha_fin, :dias_solicitados, :legajo, :tipo_lic_cod)
-            ");
-            $stmt->execute($datos);
-            $nro = (int)$this->pdo->lastInsertId();
-
-            // Primer estado: Pendiente
-            $this->registrarEstado($nro, null, 'Pendiente', 'Solicitud registrada.', $supervisor_legajo);
-
-            $this->pdo->commit();
-            return $nro;
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            throw $e;
-        }
-    }
-
-    // Cambiar estado (Aprobar / Rechazar) — con auditoría ATÓMICA
-    public function cambiarEstado(int $nro, string $estado_anterior, string $estado_nuevo, string $observacion, int $supervisor_legajo): void {
-        $this->pdo->beginTransaction();
-        try {
-            $this->registrarEstado($nro, $estado_anterior, $estado_nuevo, $observacion, $supervisor_legajo);
-            $this->pdo->commit();
-        } catch (Exception $e) {
-            $this->pdo->rollBack();
-            throw $e;
-        }
-    }
-
-    private function registrarEstado(int $nro, ?string $anterior, string $nuevo, string $obs, int $supervisor): void {
         $stmt = $this->pdo->prepare("
-            INSERT INTO Auditoria_Estado_Solicitud
-                (nro_solicitud, estado_anterior, estado_nuevo, observacion, supervisor_legajo)
-            VALUES
-                (:nro, :anterior, :nuevo, :obs, :supervisor)
+            CALL registrar_solicitud_licencia(:legajo, :tipo_lic_cod, :fecha_inicio, :fecha_fin, :dias, :supervisor, @nro_solicitud)
+        ");
+        $stmt->execute([
+            ':legajo'        => $datos['legajo'],
+            ':tipo_lic_cod'  => $datos['tipo_lic_cod'],
+            ':fecha_inicio'  => $datos['fecha_inicio'],
+            ':fecha_fin'     => $datos['fecha_fin'],
+            ':dias'          => $datos['dias_solicitados'],
+            ':supervisor'    => $supervisor_legajo,
+        ]);
+        $stmt->closeCursor(); // libera el resultado del CALL antes de leer el OUT
+
+        $nro = (int)$this->pdo->query("SELECT @nro_solicitud")->fetchColumn();
+        return $nro;
+    }
+
+    // Cambiar estado (Aprobar / Rechazar) — invoca el procedimiento almacenado
+    public function cambiarEstado(int $nro, string $estado_anterior, string $estado_nuevo, string $observacion, int $supervisor_legajo): void {
+        $stmt = $this->pdo->prepare("
+            CALL cambiar_estado_solicitud(:nro, :anterior, :nuevo, :obs, :supervisor)
         ");
         $stmt->execute([
             ':nro'        => $nro,
-            ':anterior'   => $anterior,
-            ':nuevo'      => $nuevo,
-            ':obs'        => $obs,
-            ':supervisor' => $supervisor,
+            ':anterior'   => $estado_anterior,
+            ':nuevo'      => $estado_nuevo,
+            ':obs'        => $observacion,
+            ':supervisor' => $supervisor_legajo,
         ]);
+        $stmt->closeCursor();
     }
 
     // Para poblar selects

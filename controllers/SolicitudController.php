@@ -105,12 +105,11 @@ class SolicitudController {
         }
 
         $datos = [
-            ':fecha_solicitud'  => date('Y-m-d'),
-            ':fecha_inicio'     => $fecha_ini,
-            ':fecha_fin'        => $fecha_fin,
-            ':dias_solicitados' => $dias,
-            ':legajo'           => $legajo,
-            ':tipo_lic_cod'     => $tipo_lic,
+            'fecha_inicio'     => $fecha_ini,
+            'fecha_fin'        => $fecha_fin,
+            'dias_solicitados' => $dias,
+            'legajo'           => $legajo,
+            'tipo_lic_cod'     => $tipo_lic,
         ];
 
         try {
