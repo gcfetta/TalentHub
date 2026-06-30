@@ -21,7 +21,7 @@ switch ($page) {
         require_once 'controllers/AuthController.php';
         $ctrl = new AuthController($pdo);
         $ctrl->login();
-        break;
+    break;
 
     case 'logout':
         require_once 'controllers/AuthController.php';
@@ -30,19 +30,21 @@ switch ($page) {
         break;
 
     case 'dashboard':
-        require_once 'views/dashboard/index.php';
+        require_once 'controllers/DashboardController.php';
+        $ctrl = new DashboardController($pdo);
+        $ctrl->index();
         break;
 
     case 'empleados':
-    require_once 'controllers/EmpleadoController.php';
-    $ctrl = new EmpleadoController($pdo);
-    $ctrl->manejar();
+        require_once 'controllers/EmpleadoController.php';
+        $ctrl = new EmpleadoController($pdo);
+        $ctrl->manejar();
     break;
 
     case 'solicitudes':
-    require_once 'controllers/SolicitudController.php';
-    $ctrl = new SolicitudController($pdo);
-    $ctrl->manejar();
+        require_once 'controllers/SolicitudController.php';
+        $ctrl = new SolicitudController($pdo);
+        $ctrl->manejar();
     break;
 
     case 'evaluaciones':
@@ -55,13 +57,13 @@ switch ($page) {
         require_once 'controllers/CargoController.php';
         $ctrl = new CargoController($pdo);
         $ctrl->manejar();
-        break;
+    break;
 
     case 'departamentos':
         require_once 'controllers/DepartamentoController.php';
         $ctrl = new DepartamentoController($pdo);
         $ctrl->manejar();
-        break;
+    break;
 
     default:
         http_response_code(404);
