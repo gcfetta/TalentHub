@@ -39,6 +39,8 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         <div>
             <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Fecha de ingreso</div>
             <div><?= $empleado['fecha_ingreso'] ?></div>
+            <div><strong>Antigüedad:</strong> <?= $empleado['anios_antiguedad'] ?> años</div>
+            <div><strong>Promedio evaluaciones:</strong> <?= $empleado['promedio_evaluaciones'] ?? '—' ?></div>
         </div>
         <div>
             <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Supervisor</div>

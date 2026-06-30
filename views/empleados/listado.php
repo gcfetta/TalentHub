@@ -36,6 +36,9 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                 <th>Departamento</th>
                 <th>Localidad</th>
                 <th>Ingreso</th>
+                <th>Antigüedad</th>
+                <th>Prom. evaluaciones</th>
+                <th>Acciones</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -48,6 +51,16 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                 <td><?= htmlspecialchars($emp['departamento']) ?></td>
                 <td><?= htmlspecialchars($emp['localidad']) ?></td>
                 <td><?= $emp['fecha_ingreso'] ?></td>
+                <td><?= $emp['anios_antiguedad'] ?> años</td>
+                <td>
+                    <?php if ($emp['promedio_evaluaciones'] !== null): ?>
+                        <span class="badge <?= $emp['promedio_evaluaciones'] >= 7 ? 'badge-success' : 'badge-warning' ?>">
+                            <?= $emp['promedio_evaluaciones'] ?>
+                        </span>
+                    <?php else: ?>
+                        —
+                    <?php endif; ?>
+                </td>
                 <td>
                     <div class="table-actions">
                         <a href="index.php?page=empleados&accion=ver&legajo=<?= $emp['legajo'] ?>"

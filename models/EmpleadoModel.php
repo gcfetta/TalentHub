@@ -31,7 +31,9 @@ class EmpleadoModel {
                    e.fecha_ingreso, e.depto_cod, e.localidad_cod, e.supervisor_legajo,
                    d.nombre AS departamento,
                    l.nombre AS localidad,
-                   CONCAT(s.nombre, ' ', s.apellido) AS supervisor
+                   CONCAT(s.nombre, ' ', s.apellido) AS supervisor,
+                   calcular_antiguedad(e.fecha_ingreso) AS anios_antiguedad,
+                   promedio_puntaje_empleado(e.legajo) AS promedio_evaluaciones
             FROM Empleado e
             JOIN Departamento d ON d.depto_cod = e.depto_cod
             JOIN Localidad l    ON l.localidad_cod = e.localidad_cod
