@@ -27,9 +27,18 @@ class SolicitudController {
         $rol    = $_SESSION['rol'];
         $legajo = (int)$_SESSION['legajo'];
 
-        // Empleado solo ve las suyas; RRHH y Admin ven todas
+        $estado_filtro = $_GET['estado'] ?? null;
+        $estados_validos = ['Pendiente', 'Aprobada', 'Rechazada'];
+        if (!in_array($estado_filtro, $estados_validos)) {
+            $estado_filtro = null;
+        }
+
+        $busqueda = trim($_GET['q'] ?? '');
+        $busqueda = $busqueda !== '' ? $busqueda : null;
+
+        // Empleado solo ve las suyas; RRHH, Admin y Supervisor ven todas
         $filtro = in_array($rol, ['Administrador', 'RRHH', 'Supervisor']) ? null : $legajo;
-        $solicitudes = $this->modelo->obtenerTodas($filtro);
+        $solicitudes = $this->modelo->obtenerTodas($filtro, $estado_filtro, $busqueda);
 
         require_once __DIR__ . '/../views/solicitudes/listado.php';
     }

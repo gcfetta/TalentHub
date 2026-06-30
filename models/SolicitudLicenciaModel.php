@@ -9,8 +9,13 @@ class SolicitudLicenciaModel {
     }
 
     // Todas las solicitudes con su estado actual (último registro de auditoría)
-    public function obtenerTodas(?int $legajo_filtro = null): array {
-        $where = $legajo_filtro ? "WHERE sl.legajo = :legajo" : "";
+    public function obtenerTodas(?int $legajo_filtro = null, ?string $estado_filtro = null, ?string $busqueda = null): array {
+        $condiciones = [];
+        if ($legajo_filtro) $condiciones[] = "sl.legajo = :legajo";
+        if ($estado_filtro) $condiciones[] = "v.estado_actual = :estado";
+        if ($busqueda)      $condiciones[] = "(v.empleado LIKE :busqueda OR sl.legajo = :busqueda_legajo)";
+        $where = $condiciones ? "WHERE " . implode(' AND ', $condiciones) : "";
+
         $sql = "
             SELECT v.nro_solicitud, v.fecha_solicitud, v.fecha_inicio,
                 v.fecha_fin, v.dias_solicitados,
@@ -24,6 +29,11 @@ class SolicitudLicenciaModel {
         ";
         $stmt = $this->pdo->prepare($sql);
         if ($legajo_filtro) $stmt->bindValue(':legajo', $legajo_filtro, PDO::PARAM_INT);
+        if ($estado_filtro) $stmt->bindValue(':estado', $estado_filtro);
+        if ($busqueda) {
+            $stmt->bindValue(':busqueda', '%' . $busqueda . '%');
+            $stmt->bindValue(':busqueda_legajo', is_numeric($busqueda) ? (int)$busqueda : -1, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }
