@@ -110,8 +110,7 @@ class EmpleadoModel {
     }
 
     public function eliminar(int $legajo): void {
-        $stmt = $this->pdo->prepare("DELETE FROM Empleado WHERE legajo = ?");
-        $stmt->execute([$legajo]);
+        $this->pdo->prepare("UPDATE Empleado SET activo = 0 WHERE legajo = ?")->execute([$legajo]);
     }
 
     // Auxiliares para poblar selects del formulario

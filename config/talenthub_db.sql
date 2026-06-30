@@ -1,6 +1,8 @@
 -- ============================================================
 --  TalentHub – Sistema de Recursos Humanos
---  Script completo: tablas + programabilidad + datos de prueba
+--  Script definitivo: tablas + programabilidad + datos de prueba
+--  Versión con bajas lógicas (campo activo) en Empleado,
+--  Cargo y Departamento.
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS talenthub_db
@@ -14,15 +16,15 @@ USE talenthub_db;
 -- ============================================================
 
 CREATE TABLE Localidad (
-    localidad_cod   INT          PRIMARY KEY AUTO_INCREMENT,
-    nombre          VARCHAR(100) NOT NULL,
-    provincia       VARCHAR(100) NOT NULL
+    localidad_cod INT          PRIMARY KEY AUTO_INCREMENT,
+    nombre        VARCHAR(100) NOT NULL,
+    provincia     VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE Nivel_Jerarquico (
-    nivel_cod       INT          PRIMARY KEY AUTO_INCREMENT,
-    nombre          VARCHAR(50)  NOT NULL,
-    descripcion     VARCHAR(255)
+    nivel_cod   INT          PRIMARY KEY AUTO_INCREMENT,
+    nombre      VARCHAR(50)  NOT NULL,
+    descripcion VARCHAR(255)
 );
 
 CREATE TABLE Tipo_Licencia (
@@ -34,7 +36,7 @@ CREATE TABLE Tipo_Licencia (
 );
 
 -- ============================================================
---  BLOQUE 2 – Tablas con una sola FK
+--  BLOQUE 2 – Cargo y Departamento (con baja lógica)
 -- ============================================================
 
 CREATE TABLE Cargo (
@@ -43,20 +45,22 @@ CREATE TABLE Cargo (
     banda_salarial_min DECIMAL(12,2) NOT NULL,
     banda_salarial_max DECIMAL(12,2) NOT NULL,
     nivel_cod          INT           NOT NULL,
+    activo             TINYINT(1)    NOT NULL DEFAULT 1,
     CONSTRAINT fk_cargo_nivel
         FOREIGN KEY (nivel_cod) REFERENCES Nivel_Jerarquico(nivel_cod)
 );
 
 CREATE TABLE Departamento (
-    depto_cod     INT          PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    depto_cod     INT          PRIMARY KEY AUTO_INCREMENT,
     nombre        VARCHAR(100) NOT NULL,
     localidad_cod INT          NOT NULL,
+    activo        TINYINT(1)   NOT NULL DEFAULT 1,
     CONSTRAINT fk_depto_localidad
         FOREIGN KEY (localidad_cod) REFERENCES Localidad(localidad_cod)
 );
 
 -- ============================================================
---  BLOQUE 3 – Empleado
+--  BLOQUE 3 – Empleado (con baja lógica)
 -- ============================================================
 
 CREATE TABLE Empleado (
@@ -69,6 +73,7 @@ CREATE TABLE Empleado (
     localidad_cod     INT          NOT NULL,
     depto_cod         INT          NOT NULL,
     supervisor_legajo INT,
+    activo            TINYINT(1)   NOT NULL DEFAULT 1,
     CONSTRAINT fk_empleado_localidad
         FOREIGN KEY (localidad_cod)     REFERENCES Localidad(localidad_cod),
     CONSTRAINT fk_empleado_depto
@@ -78,8 +83,8 @@ CREATE TABLE Empleado (
 );
 
 -- ============================================================
---  BLOQUE 4 – Historial, Evaluaciones y Auditoría Salarial
---  Auditoria_Salario va aquí para que el trigger pueda referenciarla
+--  BLOQUE 4 – Historial, Auditoría Salarial y Evaluaciones
+--  Auditoria_Salario va aquí para que el trigger la referencie
 -- ============================================================
 
 CREATE TABLE Historial_Cargo (
@@ -181,15 +186,14 @@ CREATE TABLE Usuario (
 -- ============================================================
 --  BLOQUE 7 – Funciones almacenadas
 --  Contexto PDF: "Caso TalentHub – Cálculo de Antigüedad"
---  Las funciones van ANTES de los procedimientos y vistas
---  que las invocan.
+--  Van ANTES de procedimientos y vistas que las invocan.
 -- ============================================================
 
 DELIMITER //
 
--- Devuelve años completos de antigüedad. DETERMINISTIC porque
--- dado el mismo input siempre retorna el mismo valor.
--- Usable directamente en SELECT como columna calculada.
+-- Devuelve años completos de antigüedad.
+-- DETERMINISTIC: mismo input → mismo output.
+-- Invocable directamente en SELECT como columna calculada.
 CREATE FUNCTION calcular_antiguedad(p_fecha_ingreso DATE)
 RETURNS INT
 DETERMINISTIC
@@ -199,7 +203,7 @@ BEGIN
 END //
 
 -- Devuelve promedio de puntajes de evaluación de un empleado.
--- Retorna 0.00 si no tiene evaluaciones (COALESCE evita NULL).
+-- COALESCE evita retornar NULL cuando no hay evaluaciones.
 CREATE FUNCTION promedio_puntaje_empleado(p_legajo INT)
 RETURNS DECIMAL(5,2)
 DETERMINISTIC
@@ -218,8 +222,8 @@ END //
 --  transacciones todo-o-nada.
 -- ============================================================
 
--- Registra una nueva solicitud de licencia con validación de
--- días disponibles. El OUT devuelve el nro generado al PHP.
+-- Registra una nueva solicitud validando días disponibles.
+-- Parámetro OUT devuelve el nro generado al PHP.
 CREATE PROCEDURE registrar_solicitud_licencia(
     IN  p_legajo            INT,
     IN  p_tipo_lic_cod      INT,
@@ -277,7 +281,7 @@ BEGIN
 END //
 
 -- Cambia el estado de una solicitud con auditoría atómica.
--- El PHP llama CALL en lugar de dos INSERTs separados.
+-- El PHP invoca CALL en lugar de INSERTs directos.
 CREATE PROCEDURE cambiar_estado_solicitud(
     IN p_nro_solicitud     INT,
     IN p_estado_anterior   VARCHAR(50),
@@ -301,9 +305,9 @@ END //
 --  Contexto PDF: "Los vigilantes silenciosos de la base de datos"
 -- ============================================================
 
--- AFTER UPDATE: registra en Auditoria_Salario cada vez que
--- un empleado cambia de cargo en su historial.
--- Equivalente exacto al "Trigger de Historial Salarial" del PDF.
+-- AFTER UPDATE en Historial_Cargo: registra en Auditoria_Salario
+-- cada cambio de cargo. Equivale exactamente al "Trigger de
+-- Historial Salarial" del material de cátedra.
 CREATE TRIGGER tr_auditoria_salario
 AFTER UPDATE ON Historial_Cargo
 FOR EACH ROW
@@ -316,11 +320,11 @@ BEGIN
     END IF;
 END //
 
--- BEFORE INSERT: cierra el cargo activo anterior antes de abrir
--- uno nuevo. Garantiza que nunca haya dos registros abiertos
+-- BEFORE INSERT en Historial_Cargo: cierra el cargo activo
+-- anterior para que nunca existan dos registros abiertos
 -- (fecha_hasta IS NULL) para el mismo empleado.
--- NOTA: este trigger se desactiva durante la carga de datos
--- históricos (ver SET @skip_trigger más abajo).
+-- La variable @skip_trigger desactiva la lógica durante la
+-- carga de datos semilla que ya tiene fechas explícitas.
 CREATE TRIGGER tr_cerrar_cargo_anterior
 BEFORE INSERT ON Historial_Cargo
 FOR EACH ROW
@@ -339,9 +343,10 @@ DELIMITER ;
 --  BLOQUE 10 – Vistas
 --  Contexto PDF: capa de abstracción virtual, desacopla esquema
 --  físico de la capa de aplicación.
+--  Las tres vistas filtran registros inactivos (activo = 1).
 -- ============================================================
 
--- Resumen completo de empleados con antigüedad y promedio
+-- Resumen completo de empleados activos con antigüedad y promedio
 -- calculados por las funciones almacenadas.
 CREATE OR REPLACE VIEW v_empleados_resumen AS
 SELECT
@@ -357,15 +362,16 @@ SELECT
     promedio_puntaje_empleado(e.legajo)    AS promedio_evaluaciones,
     CONCAT(s.nombre, ' ', s.apellido)      AS supervisor
 FROM Empleado e
-JOIN Departamento d           ON d.depto_cod    = e.depto_cod
+JOIN Departamento d           ON d.depto_cod     = e.depto_cod
 JOIN Localidad l              ON l.localidad_cod = e.localidad_cod
-LEFT JOIN Empleado s          ON s.legajo       = e.supervisor_legajo
-LEFT JOIN Historial_Cargo hc  ON hc.legajo      = e.legajo AND hc.fecha_hasta IS NULL
-LEFT JOIN Cargo c             ON c.cargo_cod    = hc.cargo_cod
-LEFT JOIN Nivel_Jerarquico nj ON nj.nivel_cod   = c.nivel_cod;
+LEFT JOIN Empleado s          ON s.legajo        = e.supervisor_legajo
+LEFT JOIN Historial_Cargo hc  ON hc.legajo       = e.legajo AND hc.fecha_hasta IS NULL
+LEFT JOIN Cargo c             ON c.cargo_cod     = hc.cargo_cod
+LEFT JOIN Nivel_Jerarquico nj ON nj.nivel_cod    = c.nivel_cod
+WHERE e.activo = 1;
 
--- Estado actual de cada solicitud (solo el último registro de auditoría).
--- No es actualizable por usar subconsulta de agregación — solo lectura.
+-- Estado actual de cada solicitud (último registro de auditoría).
+-- No actualizable: usa subconsulta de agregación → solo lectura.
 CREATE OR REPLACE VIEW v_solicitudes_estado_actual AS
 SELECT
     sl.nro_solicitud,
@@ -373,6 +379,7 @@ SELECT
     sl.fecha_inicio,
     sl.fecha_fin,
     sl.dias_solicitados,
+    sl.legajo,
     CONCAT(e.nombre, ' ', e.apellido)  AS empleado,
     tl.nombre                           AS tipo_licencia,
     tl.remunerada,
@@ -391,8 +398,8 @@ JOIN Auditoria_Estado_Solicitud a
      )
 JOIN Empleado s ON s.legajo = a.supervisor_legajo;
 
--- Ranking de evaluaciones agrupado por empleado.
--- No actualizable (GROUP BY + funciones de agregación).
+-- Ranking de evaluaciones agrupado por empleado activo.
+-- No actualizable: GROUP BY + funciones de agregación → solo lectura.
 CREATE OR REPLACE VIEW v_ranking_evaluaciones AS
 SELECT
     e.legajo,
@@ -405,6 +412,7 @@ SELECT
 FROM Empleado e
 JOIN Departamento d ON d.depto_cod = e.depto_cod
 LEFT JOIN Evaluacion_Desempeno ed ON ed.legajo = e.legajo
+WHERE e.activo = 1
 GROUP BY e.legajo, e.nombre, e.apellido, d.nombre;
 
 -- ============================================================
@@ -413,11 +421,16 @@ GROUP BY e.legajo, e.nombre, e.apellido, d.nombre;
 --  separación DDL/DML, restricción de host.
 -- ============================================================
 
+-- Usuario de la aplicación PHP: SELECT, INSERT, UPDATE.
+-- Sin DELETE ni DDL para reducir superficie de ataque.
+-- Las bajas son lógicas (UPDATE activo=0), no físicas.
 CREATE USER IF NOT EXISTS 'talenthub_app'@'localhost'
     IDENTIFIED BY 'AppPass2026!';
 GRANT SELECT, INSERT, UPDATE
     ON talenthub_db.* TO 'talenthub_app'@'localhost';
 
+-- Usuario de solo lectura para reportes y gerencia.
+-- Solo accede a las tres vistas, no a las tablas base.
 CREATE USER IF NOT EXISTS 'talenthub_reporter'@'localhost'
     IDENTIFIED BY 'ReportPass2026!';
 GRANT SELECT ON talenthub_db.v_empleados_resumen
@@ -445,12 +458,13 @@ FLUSH PRIVILEGES;
 -- LINES TERMINATED BY '\n'
 -- FROM Empleado e
 -- LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
--- LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod;
+-- LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
+-- WHERE e.activo = 1;
 
 -- ============================================================
 --  DATOS DE PRUEBA
---  IMPORTANTE: el trigger tr_cerrar_cargo_anterior se desactiva
---  durante la inserción histórica para respetar las fechas reales.
+--  El trigger tr_cerrar_cargo_anterior se desactiva durante la
+--  inserción del historial para respetar las fechas reales.
 -- ============================================================
 
 INSERT INTO Localidad (localidad_cod, nombre, provincia) VALUES
@@ -471,39 +485,39 @@ INSERT INTO Tipo_Licencia (tipo_lic_cod, nombre, dias_max, requiere_certificado,
 (4, 'Licencia sin Goce',     10, 0, 0),
 (5, 'Maternidad/Paternidad', 90, 1, 1);
 
-INSERT INTO Cargo (cargo_cod, nombre, banda_salarial_min, banda_salarial_max, nivel_cod) VALUES
-(1, 'Gerente General',        400000.00, 700000.00, 1),
-(2, 'Gerente de RRHH',        300000.00, 500000.00, 1),
-(3, 'Gerente de Sistemas',    300000.00, 500000.00, 1),
-(4, 'Jefe de Administración', 180000.00, 280000.00, 2),
-(5, 'Coordinador de RRHH',    150000.00, 240000.00, 2),
-(6, 'Analista de RRHH',        90000.00, 150000.00, 3),
-(7, 'Desarrollador PHP',      100000.00, 170000.00, 3),
-(8, 'Administrativo',          70000.00, 110000.00, 3),
-(9, 'Recepcionista',           55000.00,  85000.00, 3);
+INSERT INTO Cargo (cargo_cod, nombre, banda_salarial_min, banda_salarial_max, nivel_cod, activo) VALUES
+(1, 'Gerente General',        400000.00, 700000.00, 1, 1),
+(2, 'Gerente de RRHH',        300000.00, 500000.00, 1, 1),
+(3, 'Gerente de Sistemas',    300000.00, 500000.00, 1, 1),
+(4, 'Jefe de Administración', 180000.00, 280000.00, 2, 1),
+(5, 'Coordinador de RRHH',    150000.00, 240000.00, 2, 1),
+(6, 'Analista de RRHH',        90000.00, 150000.00, 3, 1),
+(7, 'Desarrollador PHP',      100000.00, 170000.00, 3, 1),
+(8, 'Administrativo',          70000.00, 110000.00, 3, 1),
+(9, 'Recepcionista',           55000.00,  85000.00, 3, 1);
 
-INSERT INTO Departamento (depto_cod, nombre, localidad_cod) VALUES
-(1, 'Dirección General', 1),
-(2, 'Recursos Humanos',  1),
-(3, 'Sistemas',          1),
-(4, 'Administración',    2),
-(5, 'Operaciones',       3);
+INSERT INTO Departamento (depto_cod, nombre, localidad_cod, activo) VALUES
+(1, 'Dirección General', 1, 1),
+(2, 'Recursos Humanos',  1, 1),
+(3, 'Sistemas',          1, 1),
+(4, 'Administración',    2, 1),
+(5, 'Operaciones',       3, 1);
 
--- Sin supervisor primero (gerentes)
-INSERT INTO Empleado (legajo, nombre, apellido, mail, fecha_ingreso, telefono, localidad_cod, depto_cod, supervisor_legajo) VALUES
-(1001, 'Martín',  'Ferreyra', 'mferrey@talenthub.com',  '2018-03-01', '2994100001', 1, 1, NULL),
-(1002, 'Claudia', 'Ríos',     'crios@talenthub.com',    '2019-05-15', '2994100002', 1, 2, NULL),
-(1003, 'Roberto', 'Sánchez',  'rsanchez@talenthub.com', '2019-08-20', '2994100003', 1, 3, NULL);
+-- Gerentes sin supervisor
+INSERT INTO Empleado (legajo, nombre, apellido, mail, fecha_ingreso, telefono, localidad_cod, depto_cod, supervisor_legajo, activo) VALUES
+(1001, 'Martín',  'Ferreyra', 'mferrey@talenthub.com',  '2018-03-01', '2994100001', 1, 1, NULL, 1),
+(1002, 'Claudia', 'Ríos',     'crios@talenthub.com',    '2019-05-15', '2994100002', 1, 2, NULL, 1),
+(1003, 'Roberto', 'Sánchez',  'rsanchez@talenthub.com', '2019-08-20', '2994100003', 1, 3, NULL, 1);
 
--- Con supervisor
-INSERT INTO Empleado (legajo, nombre, apellido, mail, fecha_ingreso, telefono, localidad_cod, depto_cod, supervisor_legajo) VALUES
-(1004, 'Verónica', 'Luna',    'vluna@talenthub.com',    '2020-01-10', '2994100004', 1, 2, 1002),
-(1005, 'Diego',    'Morales', 'dmorales@talenthub.com', '2020-06-01', '2994100005', 1, 3, 1003),
-(1006, 'Sofía',    'Paredes', 'sparedes@talenthub.com', '2021-02-15', '2994100006', 2, 4, 1001),
-(1007, 'Hernán',   'Castro',  'hcastro@talenthub.com',  '2021-07-01', '2994100007', 1, 2, 1002),
-(1008, 'Natalia',  'Gómez',   'ngomez@talenthub.com',   '2022-03-10', '2994100008', 1, 3, 1003),
-(1009, 'Ezequiel', 'Vidal',   'evidal@talenthub.com',   '2022-09-01', '2994100009', 2, 4, 1006),
-(1010, 'Laura',    'Ibáñez',  'libanez@talenthub.com',  '2023-01-16', '2994100010', 3, 5, 1001);
+-- Empleados con supervisor
+INSERT INTO Empleado (legajo, nombre, apellido, mail, fecha_ingreso, telefono, localidad_cod, depto_cod, supervisor_legajo, activo) VALUES
+(1004, 'Verónica', 'Luna',    'vluna@talenthub.com',    '2020-01-10', '2994100004', 1, 2, 1002, 1),
+(1005, 'Diego',    'Morales', 'dmorales@talenthub.com', '2020-06-01', '2994100005', 1, 3, 1003, 1),
+(1006, 'Sofía',    'Paredes', 'sparedes@talenthub.com', '2021-02-15', '2994100006', 2, 4, 1001, 1),
+(1007, 'Hernán',   'Castro',  'hcastro@talenthub.com',  '2021-07-01', '2994100007', 1, 2, 1002, 1),
+(1008, 'Natalia',  'Gómez',   'ngomez@talenthub.com',   '2022-03-10', '2994100008', 1, 3, 1003, 1),
+(1009, 'Ezequiel', 'Vidal',   'evidal@talenthub.com',   '2022-09-01', '2994100009', 2, 4, 1006, 1),
+(1010, 'Laura',    'Ibáñez',  'libanez@talenthub.com',  '2023-01-16', '2994100010', 3, 5, 1001, 1);
 
 -- password_hash se genera con setup_usuarios.php
 INSERT INTO Usuario (usuario_id, legajo, username, password_hash, rol, activo) VALUES
@@ -514,9 +528,8 @@ INSERT INTO Usuario (usuario_id, legajo, username, password_hash, rol, activo) V
 (5, 1005, 'dmorales', 'PENDIENTE_BCRYPT', 'Empleado',      1),
 (6, 1006, 'sparedes', 'PENDIENTE_BCRYPT', 'Empleado',      1);
 
--- Desactivar tr_cerrar_cargo_anterior para respetar historia real.
--- Los datos tienen fechas explícitas; el trigger solo aplica en
--- operaciones normales de producción, no en carga de semilla.
+-- Desactivar tr_cerrar_cargo_anterior durante la carga semilla.
+-- Los datos históricos ya tienen fechas explícitas correctas.
 SET @skip_trigger = 1;
 
 INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde, fecha_hasta) VALUES
@@ -587,10 +600,10 @@ INSERT INTO Documento_Licencia (nro_solicitud, tipo_documento, archivo_path, fec
 (6, 'Certificado médico',       'docs/licencias/cert_med_1006_jun24.pdf', '2024-06-10 11:30:00'),
 (8, 'Certificado médico',       'docs/licencias/cert_med_1004_ago24.pdf', '2024-08-05 10:15:00');
 
--- Datos de muestra en Auditoria_Salario (cambios de cargo históricos)
--- para que la tabla no aparezca vacía en el proyecto.
--- Corresponden a los cambios reales del Historial_Cargo.
+-- Datos de muestra en Auditoria_Salario: corresponden a los
+-- cambios de cargo reales del historial. La tabla no aparece
+-- vacía y el trigger tiene contexto visible en la presentación.
 INSERT INTO Auditoria_Salario (legajo, historial_id, cargo_anterior_cod, cargo_nuevo_cod, fecha_cambio) VALUES
-(1001, 2,  4, 1, '2021-01-01 08:00:00'),
-(1004, 6,  6, 5, '2022-07-01 08:00:00'),
-(1006, 9,  8, 4, '2023-04-01 08:00:00');
+(1001, 2, 4, 1, '2021-01-01 08:00:00'),
+(1004, 6, 6, 5, '2022-07-01 08:00:00'),
+(1006, 9, 8, 4, '2023-04-01 08:00:00');

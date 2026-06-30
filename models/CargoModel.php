@@ -48,12 +48,16 @@ class CargoModel {
     }
 
     public function tieneEmpleados(int $id): bool {
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM Historial_Cargo WHERE cargo_cod=? AND fecha_hasta IS NULL");
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) FROM Historial_Cargo hc
+            JOIN Empleado e ON e.legajo = hc.legajo
+            WHERE hc.cargo_cod = ? AND hc.fecha_hasta IS NULL AND e.activo = 1
+        ");
         $stmt->execute([$id]);
         return (bool)$stmt->fetchColumn();
     }
 
     public function eliminar(int $id): void {
-        $this->pdo->prepare("DELETE FROM Cargo WHERE cargo_cod=?")->execute([$id]);
+        $this->pdo->prepare("UPDATE Cargo SET activo = 0 WHERE cargo_cod = ?")->execute([$id]);
     }
 }

@@ -45,12 +45,14 @@ class DepartamentoModel {
     }
 
     public function tieneEmpleados(int $id): bool {
-        $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM Empleado WHERE depto_cod=?");
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) FROM Empleado WHERE depto_cod = ? AND activo = 1
+        ");
         $stmt->execute([$id]);
         return (bool)$stmt->fetchColumn();
     }
 
     public function eliminar(int $id): void {
-        $this->pdo->prepare("DELETE FROM Departamento WHERE depto_cod=?")->execute([$id]);
+        $this->pdo->prepare("UPDATE Departamento SET activo = 0 WHERE depto_cod = ?")->execute([$id]);
     }
 }
