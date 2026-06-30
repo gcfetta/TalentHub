@@ -13,6 +13,38 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
     <div class="alert alert-success">Evaluación guardada correctamente.</div>
 <?php endif; ?>
 
+<?php if (!empty($ranking)): ?>
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header">
+        <h2>🏆 Ranking de empleados por desempeño</h2>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Empleado</th>
+                <th>Departamento</th>
+                <th>Evaluaciones</th>
+                <th>Promedio</th>
+                <th>Máx</th>
+                <th>Mín</th>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($ranking as $r): ?>
+            <tr>
+                <td><?= htmlspecialchars($r['nombre_completo']) ?></td>
+                <td><?= htmlspecialchars($r['departamento']) ?></td>
+                <td><?= $r['total_evaluaciones'] ?></td>
+                <td><?= $r['promedio_puntaje'] ?? '—' ?></td>
+                <td><?= $r['puntaje_maximo'] ?? '—' ?></td>
+                <td><?= $r['puntaje_minimo'] ?? '—' ?></td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
 <div class="card">
     <div class="card-header">
         <h2>Historial de evaluaciones</h2>

@@ -114,4 +114,15 @@ class EvaluacionModel {
         $r = $stmt->fetchColumn();
         return $r !== false ? round((float)$r, 2) : null;
     }
+
+    // Ranking de empleados según evaluaciones (usa la vista)
+    public function obtenerRanking(): array {
+        return $this->pdo->query("
+            SELECT legajo, nombre_completo, departamento,
+                   total_evaluaciones, promedio_puntaje,
+                   puntaje_maximo, puntaje_minimo
+            FROM v_ranking_evaluaciones
+            ORDER BY promedio_puntaje DESC
+        ")->fetchAll();
+    }
 }

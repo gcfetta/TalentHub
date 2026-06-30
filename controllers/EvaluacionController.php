@@ -26,9 +26,12 @@ class EvaluacionController {
         $rol    = $_SESSION['rol'];
         $legajo = (int)$_SESSION['legajo'];
 
-        // Empleado solo ve las suyas; roles con permisos ven todas
         $filtro = in_array($rol, ['Administrador', 'RRHH', 'Supervisor']) ? null : $legajo;
         $evaluaciones = $this->modelo->obtenerTodas($filtro);
+
+        $ranking = in_array($rol, ['Administrador', 'RRHH', 'Supervisor'])
+            ? $this->modelo->obtenerRanking()
+            : [];
 
         require_once __DIR__ . '/../views/evaluaciones/listado.php';
     }
