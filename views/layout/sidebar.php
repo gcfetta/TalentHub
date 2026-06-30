@@ -35,6 +35,7 @@ function menu_item($page, $label, $icono, $page_actual) {
         <div class="nav-section-label">Administración</div>
         <?php menu_item('cargos', 'Cargos', '🏷️', $page_actual); ?>
         <?php menu_item('departamentos', 'Departamentos', '🏬', $page_actual); ?>
+        <?php menu_item('auditoria_salario', 'Auditoría salarial', '🧾', $page_actual); ?>
         <?php endif; ?>
     </nav>
 

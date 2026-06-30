@@ -65,6 +65,12 @@ switch ($page) {
         $ctrl->manejar();
     break;
 
+    case 'auditoria_salario':
+        require_once 'controllers/AuditoriaSalarioController.php';
+        $ctrl = new AuditoriaSalarioController($pdo);
+        $ctrl->manejar();
+    break;
+
     default:
         http_response_code(404);
         echo "<h1>Página no encontrada</h1>";
