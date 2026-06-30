@@ -21,7 +21,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
 <form method="POST" action="index.php?page=solicitudes&accion=guardar">
 
     <!-- Solo RRHH/Admin pueden elegir el empleado; el empleado se carga solo -->
-    <?php if (in_array($_SESSION['rol'], ['Administrador', 'RRHH'])): ?>
+    <?php if (in_array($_SESSION['rol'], ['Administrador', 'RRHH', 'Supervisor'])): ?>
     <div class="form-group">
         <label>Empleado *</label>
         <select name="legajo" class="form-control" required>

@@ -130,6 +130,30 @@ class SolicitudLicenciaModel {
         )->fetchAll();
     }
 
+    // Empleados a cargo de un supervisor (incluye al propio supervisor)
+    public function obtenerEmpleadosVisibles(int $legajo_sesion, string $rol): array {
+        if (in_array($rol, ['Administrador', 'RRHH'])) {
+            return $this->obtenerEmpleados();
+        }
+        if ($rol === 'Supervisor') {
+            $stmt = $this->pdo->prepare("
+                SELECT legajo, CONCAT(apellido, ', ', nombre) AS nombre_completo
+                FROM Empleado
+                WHERE supervisor_legajo = :legajo OR legajo = :legajo
+                ORDER BY apellido
+            ");
+            $stmt->execute([':legajo' => $legajo_sesion]);
+            return $stmt->fetchAll();
+        }
+        // Empleado raso: solo él mismo
+        $stmt = $this->pdo->prepare("
+            SELECT legajo, CONCAT(apellido, ', ', nombre) AS nombre_completo
+            FROM Empleado WHERE legajo = :legajo
+        ");
+        $stmt->execute([':legajo' => $legajo_sesion]);
+        return $stmt->fetchAll();
+    }
+
     // Días ya usados en el año para un tipo de licencia
     public function diasUsadosEnAnio(int $legajo, int $tipo_lic_cod, int $anio): int {
         $sql = "

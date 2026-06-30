@@ -56,7 +56,10 @@ class SolicitudController {
 
     private function formulario(): void {
         $tipos      = $this->modelo->obtenerTiposLicencia();
-        $empleados  = $this->modelo->obtenerEmpleados();
+        $empleados  = $this->modelo->obtenerEmpleadosVisibles(
+            (int)$_SESSION['legajo'],
+            $_SESSION['rol']
+        );
         $error      = '';
         require_once __DIR__ . '/../views/solicitudes/formulario.php';
     }
@@ -68,6 +71,18 @@ class SolicitudController {
         }
 
         $legajo      = (int)($_POST['legajo']      ?? 0);
+
+        // Seguridad: el legajo elegido debe estar entre los visibles para este rol
+        $visibles = array_column(
+            $this->modelo->obtenerEmpleadosVisibles((int)$_SESSION['legajo'], $_SESSION['rol']),
+            'legajo'
+        );
+        if (!in_array($legajo, $visibles)) {
+            header('Location: index.php?page=solicitudes');
+            exit;
+        }
+
+        $tipo_lic    = (int)($_POST['tipo_lic_cod'] ?? 0);
         $tipo_lic    = (int)($_POST['tipo_lic_cod'] ?? 0);
         $fecha_ini   = $_POST['fecha_inicio'] ?? '';
         $fecha_fin   = $_POST['fecha_fin']    ?? '';
