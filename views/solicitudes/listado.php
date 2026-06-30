@@ -48,7 +48,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         ?>
             <tr>
                 <td><strong>#<?= $s['nro_solicitud'] ?></strong></td>
-                <td><?= htmlspecialchars($s['apellido'] . ', ' . $s['nombre']) ?></td>
+                <td><?= htmlspecialchars($s['empleado']) ?></td>
                 <td><?= htmlspecialchars($s['tipo_licencia']) ?></td>
                 <td><?= $s['fecha_inicio'] ?></td>
                 <td><?= $s['fecha_fin'] ?></td>

@@ -43,7 +43,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         <?php foreach ($empleados as $emp): ?>
             <tr>
                 <td><strong><?= $emp['legajo'] ?></strong></td>
-                <td><?= htmlspecialchars($emp['apellido'] . ', ' . $emp['nombre']) ?></td>
+                <td><?= htmlspecialchars($emp['nombre_completo']) ?></td>
                 <td><?= htmlspecialchars($emp['cargo_actual'] ?? '—') ?></td>
                 <td><?= htmlspecialchars($emp['departamento']) ?></td>
                 <td><?= htmlspecialchars($emp['localidad']) ?></td>
@@ -57,7 +57,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                                class="btn btn-sm">Editar</a>
                             <a href="index.php?page=empleados&accion=eliminar&legajo=<?= $emp['legajo'] ?>"
                                class="btn btn-sm btn-danger"
-                               data-confirm="¿Eliminar al empleado <?= htmlspecialchars($emp['nombre']) ?>? Esta acción no se puede deshacer.">
+                               data-confirm="¿Eliminar al empleado <?= htmlspecialchars($emp['nombre_completo']) ?>? Esta acción no se puede deshacer.">
                                Eliminar</a>
                         <?php endif; ?>
                     </div>

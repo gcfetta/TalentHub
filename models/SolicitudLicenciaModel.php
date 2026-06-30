@@ -12,23 +12,15 @@ class SolicitudLicenciaModel {
     public function obtenerTodas(?int $legajo_filtro = null): array {
         $where = $legajo_filtro ? "WHERE sl.legajo = :legajo" : "";
         $sql = "
-            SELECT sl.nro_solicitud, sl.fecha_solicitud, sl.fecha_inicio,
-                   sl.fecha_fin, sl.dias_solicitados,
-                   e.legajo, e.nombre, e.apellido,
-                   tl.nombre AS tipo_licencia,
-                   a.estado_nuevo AS estado
-            FROM Solicitud_Licencia sl
-            JOIN Empleado e       ON e.legajo        = sl.legajo
-            JOIN Tipo_Licencia tl ON tl.tipo_lic_cod = sl.tipo_lic_cod
-            JOIN Auditoria_Estado_Solicitud a
-              ON a.nro_solicitud = sl.nro_solicitud
-             AND a.auditoria_id  = (
-                 SELECT MAX(auditoria_id)
-                 FROM Auditoria_Estado_Solicitud
-                 WHERE nro_solicitud = sl.nro_solicitud
-             )
+            SELECT v.nro_solicitud, v.fecha_solicitud, v.fecha_inicio,
+                v.fecha_fin, v.dias_solicitados,
+                v.empleado, v.tipo_licencia, v.remunerada,
+                v.estado_actual AS estado, v.ultima_actualizacion, v.ultimo_supervisor,
+                sl.legajo
+            FROM v_solicitudes_estado_actual v
+            JOIN Solicitud_Licencia sl ON sl.nro_solicitud = v.nro_solicitud
             $where
-            ORDER BY sl.nro_solicitud DESC
+            ORDER BY v.nro_solicitud DESC
         ";
         $stmt = $this->pdo->prepare($sql);
         if ($legajo_filtro) $stmt->bindValue(':legajo', $legajo_filtro, PDO::PARAM_INT);

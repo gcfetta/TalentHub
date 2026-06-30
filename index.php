@@ -51,6 +51,18 @@ switch ($page) {
         $ctrl->manejar();
     break;
 
+    case 'cargos':
+        require_once 'controllers/CargoController.php';
+        $ctrl = new CargoController($pdo);
+        $ctrl->manejar();
+        break;
+
+    case 'departamentos':
+        require_once 'controllers/DepartamentoController.php';
+        $ctrl = new DepartamentoController($pdo);
+        $ctrl->manejar();
+        break;
+
     default:
         http_response_code(404);
         echo "<h1>Página no encontrada</h1>";

@@ -348,9 +348,11 @@ SELECT
     e.legajo,
     CONCAT(e.nombre, ' ', e.apellido)     AS nombre_completo,
     e.mail,
+    e.fecha_ingreso,
     d.nombre                               AS departamento,
     c.nombre                               AS cargo_actual,
     nj.nombre                              AS nivel_jerarquico,
+    l.nombre                               AS localidad,
     calcular_antiguedad(e.fecha_ingreso)   AS anios_antiguedad,
     promedio_puntaje_empleado(e.legajo)    AS promedio_evaluaciones,
     CONCAT(s.nombre, ' ', s.apellido)      AS supervisor

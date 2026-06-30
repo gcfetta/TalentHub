@@ -15,21 +15,13 @@ class EmpleadoModel {
 
     // Todos los empleados con su cargo actual y departamento
     public function obtenerTodos(): array {
-        $sql = "
-            SELECT e.legajo, e.nombre, e.apellido, e.mail, e.telefono,
-                   e.fecha_ingreso, d.nombre AS departamento,
-                   c.nombre AS cargo_actual,
-                   l.nombre AS localidad,
-                   CONCAT(s.nombre, ' ', s.apellido) AS supervisor
-            FROM Empleado e
-            JOIN Departamento d ON d.depto_cod = e.depto_cod
-            JOIN Localidad l    ON l.localidad_cod = e.localidad_cod
-            LEFT JOIN Empleado s ON s.legajo = e.supervisor_legajo
-            LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
-            LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
-            ORDER BY e.apellido, e.nombre
-        ";
-        return $this->pdo->query($sql)->fetchAll();
+        return $this->pdo->query("
+            SELECT legajo, nombre_completo, mail, fecha_ingreso,
+                departamento, cargo_actual, nivel_jerarquico,
+                localidad, anios_antiguedad, promedio_evaluaciones, supervisor
+            FROM v_empleados_resumen
+            ORDER BY nombre_completo
+        ")->fetchAll();
     }
 
     // Un empleado con todo su detalle
