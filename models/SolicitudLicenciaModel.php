@@ -175,4 +175,35 @@ class SolicitudLicenciaModel {
         $stmt->execute([':legajo' => $legajo, ':tipo' => $tipo_lic_cod, ':anio' => $anio]);
         return (int)$stmt->fetchColumn();
     }
+
+    // ¿Existe otra solicitud (no rechazada) del mismo empleado que se pise en fechas?
+    public function existeSuperposicion(int $legajo, string $fecha_inicio, string $fecha_fin, ?int $excluir_nro = null): bool {
+        $sql = "
+            SELECT COUNT(*)
+            FROM Solicitud_Licencia sl
+            JOIN Auditoria_Estado_Solicitud a
+              ON a.nro_solicitud = sl.nro_solicitud
+             AND a.auditoria_id  = (
+                 SELECT MAX(auditoria_id)
+                 FROM Auditoria_Estado_Solicitud
+                 WHERE nro_solicitud = sl.nro_solicitud
+             )
+            WHERE sl.legajo      = :legajo
+              AND a.estado_nuevo != 'Rechazada'
+              AND sl.fecha_inicio <= :fecha_fin
+              AND sl.fecha_fin    >= :fecha_inicio
+        ";
+        if ($excluir_nro) {
+            $sql .= " AND sl.nro_solicitud != :excluir_nro";
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':legajo', $legajo, PDO::PARAM_INT);
+        $stmt->bindValue(':fecha_inicio', $fecha_inicio);
+        $stmt->bindValue(':fecha_fin', $fecha_fin);
+        if ($excluir_nro) {
+            $stmt->bindValue(':excluir_nro', $excluir_nro, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return (int)$stmt->fetchColumn() > 0;
+    }
 }

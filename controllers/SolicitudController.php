@@ -110,11 +110,16 @@ class SolicitudController {
                     $error = "Supera el límite anual de {$tipo_info['dias_max']} días para este tipo de licencia. Ya usó {$dias_usados} días.";
                 }
             }
+
+            // Verificar superposición de fechas con otra licencia activa
+            if (!$error && $this->modelo->existeSuperposicion($legajo, $fecha_ini, $fecha_fin)) {
+                $error = 'Ya existe una solicitud de licencia activa para ese empleado en un rango de fechas que se superpone.';
+            }
         }
 
         if ($error) {
             $tipos     = $this->modelo->obtenerTiposLicencia();
-            $empleados = $this->modelo->obtenerEmpleados();
+            $empleados = $this->modelo->obtenerEmpleadosVisibles((int)$_SESSION['legajo'], $_SESSION['rol']);
             require_once __DIR__ . '/../views/solicitudes/formulario.php';
             return;
         }
