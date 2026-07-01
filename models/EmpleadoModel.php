@@ -81,7 +81,7 @@ class EmpleadoModel {
     public function obtenerParaSelect(): array {
         return $this->pdo->query(
             "SELECT legajo, CONCAT(apellido, ', ', nombre) AS nombre_completo
-             FROM Empleado ORDER BY apellido"
+            FROM Empleado WHERE activo = 1 ORDER BY apellido"
         )->fetchAll();
     }
 
@@ -130,6 +130,20 @@ class EmpleadoModel {
              FROM Cargo c JOIN Nivel_Jerarquico nj ON nj.nivel_cod = c.nivel_cod
              ORDER BY nj.nivel_cod, c.nombre"
         )->fetchAll();
+    }
+
+    // Devuelve el empleado activo que ya ocupa ese cargo, o false si está libre
+    public function cargoOcupado(int $cargo_cod): array|false {
+        $sql = "SELECT e.legajo, CONCAT(e.nombre, ' ', e.apellido) AS nombre_completo
+                FROM Historial_Cargo hc
+                JOIN Empleado e ON e.legajo = hc.legajo
+                WHERE hc.cargo_cod = :cargo_cod
+                AND hc.fecha_hasta IS NULL
+                AND e.activo = 1
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':cargo_cod' => $cargo_cod]);
+        return $stmt->fetch();
     }
 
     public function legajoExiste(int $legajo): bool {

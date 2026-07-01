@@ -81,58 +81,76 @@ class EmpleadoController {
             ':depto_cod'         => (int)($_POST['depto_cod']     ?? 0),
             ':supervisor_legajo' => ($_POST['supervisor_legajo'] !== '') ? (int)$_POST['supervisor_legajo'] : null,
         ];
+        $cargo_cod = !empty($_POST['cargo_cod']) ? (int)$_POST['cargo_cod'] : null;
 
-        // Validación básica
+        $recargar = function (string $mensaje) use ($es_nuevo, $legajo) {
+            $error         = $mensaje;
+            $cargos        = $this->modelo->obtenerCargos();
+            $departamentos = $this->modelo->obtenerDepartamentos();
+            $localidades   = $this->modelo->obtenerLocalidades();
+            $supervisores  = $this->modelo->obtenerParaSelect();
+            $empleado      = $es_nuevo ? null : $this->modelo->obtenerPorLegajo($legajo);
+            require_once __DIR__ . '/../views/empleados/formulario.php';
+        };
+
         foreach ([':nombre', ':apellido', ':mail', ':fecha_ingreso'] as $campo) {
             if (empty($datos[$campo])) {
-                $error = 'Completá todos los campos obligatorios.';
-                $cargos        = $this->modelo->obtenerCargos();
-                $departamentos = $this->modelo->obtenerDepartamentos();
-                $localidades   = $this->modelo->obtenerLocalidades();
-                $supervisores  = $this->modelo->obtenerParaSelect();
-                $empleado = $es_nuevo ? null : $this->modelo->obtenerPorLegajo($legajo);
-                require_once __DIR__ . '/../views/empleados/formulario.php';
+                $recargar('Completá todos los campos obligatorios.');
+                return;
+            }
+        }
+
+        if (!filter_var($datos[':mail'], FILTER_VALIDATE_EMAIL)) {
+            $recargar('El mail ingresado no es válido.');
+            return;
+        }
+
+        if ($datos[':localidad_cod'] <= 0 || $datos[':depto_cod'] <= 0) {
+            $recargar('Seleccioná una localidad y un departamento válidos.');
+            return;
+        }
+
+        if ($es_nuevo && $this->modelo->legajoExiste($legajo)) {
+            $recargar("El legajo {$legajo} ya existe.");
+            return;
+        }
+
+        if ($es_nuevo && $cargo_cod) {
+            $ocupante = $this->modelo->cargoOcupado($cargo_cod);
+            if ($ocupante) {
+                $recargar("Ese cargo ya está ocupado por {$ocupante['nombre_completo']} (legajo {$ocupante['legajo']}). Elegí otro cargo o dejalo sin asignar.");
                 return;
             }
         }
 
         try {
             if ($es_nuevo) {
-                if ($this->modelo->legajoExiste($legajo)) {
-                    $error = "El legajo {$legajo} ya existe.";
-                    $cargos        = $this->modelo->obtenerCargos();
-                    $departamentos = $this->modelo->obtenerDepartamentos();
-                    $localidades   = $this->modelo->obtenerLocalidades();
-                    $supervisores  = $this->modelo->obtenerParaSelect();
-                    $empleado = null;
-                    require_once __DIR__ . '/../views/empleados/formulario.php';
-                    return;
-                }
                 $this->modelo->crear($datos);
 
-                // Si se eligió un cargo inicial, registrarlo en historial
-                if (!empty($_POST['cargo_cod'])) {
+                if ($cargo_cod) {
                     $stmt = $this->modelo->getPdo()->prepare(
                         "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde)
-                         VALUES (?, ?, ?)"
+                        VALUES (?, ?, ?)"
                     );
-                    $stmt->execute([$legajo, (int)$_POST['cargo_cod'], $datos[':fecha_ingreso']]);
+                    $stmt->execute([$legajo, $cargo_cod, $datos[':fecha_ingreso']]);
                 }
             } else {
                 $this->modelo->actualizar($datos);
+
+                // Si edité mis propios datos, refresco el sidebar sin recargar de más
+                if ($legajo === (int)($_SESSION['legajo'] ?? 0)) {
+                    $_SESSION['nombre'] = $datos[':nombre'] . ' ' . $datos[':apellido'];
+                }
             }
 
             header('Location: index.php?page=empleados&ok=1');
             exit;
 
         } catch (PDOException $e) {
-            $error = 'Error al guardar: ' . $e->getMessage();
-            $cargos        = $this->modelo->obtenerCargos();
-            $departamentos = $this->modelo->obtenerDepartamentos();
-            $localidades   = $this->modelo->obtenerLocalidades();
-            $supervisores  = $this->modelo->obtenerParaSelect();
-            $empleado = $es_nuevo ? null : $this->modelo->obtenerPorLegajo($legajo);
-            require_once __DIR__ . '/../views/empleados/formulario.php';
+            $mensaje = ($e->getCode() == 23000)
+                ? 'Ya existe un empleado con ese mail.'
+                : 'Error al guardar: ' . $e->getMessage();
+            $recargar($mensaje);
         }
     }
 

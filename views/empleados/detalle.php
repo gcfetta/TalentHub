@@ -9,56 +9,86 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
     <span class="page-subtitle">Legajo #<?= $empleado['legajo'] ?></span>
 </div>
 
-<div style="display:flex; gap:1rem; margin-bottom:1rem;">
-    <a href="index.php?page=empleados" class="btn btn-secondary btn-sm">← Volver</a>
+<div style="margin-bottom: 2rem; display: flex; gap: 0.75rem;">
+    <a href="index.php?page=empleados" class="btn-back" style="margin: 0;">← Volver</a>
     <?php if (in_array($_SESSION['rol'], ['Administrador','RRHH'])): ?>
-        <a href="index.php?page=empleados&accion=editar&legajo=<?= $empleado['legajo'] ?>" class="btn btn-sm">Editar</a>
+        <a href="index.php?page=empleados&accion=editar&legajo=<?= $empleado['legajo'] ?>" class="btn" style="padding: 0.5rem 1.2rem; font-size: 0.85rem;">Editar perfil</a>
     <?php endif; ?>
 </div>
 
-<!-- Datos personales -->
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header"><h2>Datos personales</h2></div>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.2rem; padding:1.4rem;">
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Mail</div>
-            <div><?= htmlspecialchars($empleado['mail']) ?></div>
+<!-- Datos personales distribuidos con mejor equilibrio espacial -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2>📄 Información General</h2>
+    </div>
+    
+    <div style="padding: 2rem;">
+        <!-- Grilla principal de datos clave -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 1.5rem;">
+            <div class="detail-item">
+                <span class="detail-label">Mail</span>
+                <span class="detail-value" style="color: var(--accent); font-weight: 700;"><?= htmlspecialchars($empleado['mail']) ?></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Teléfono</span>
+                <span class="detail-value"><?= htmlspecialchars($empleado['telefono'] ?? '—') ?></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Departamento</span>
+                <span class="detail-value"><?= htmlspecialchars($empleado['departamento']) ?></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Localidad</span>
+                <span class="detail-value"><?= htmlspecialchars($empleado['localidad']) ?></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Fecha de ingreso</span>
+                <span class="detail-value"><?= $empleado['fecha_ingreso'] ?></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Supervisor directo</span>
+                <span class="detail-value" style="font-weight: 700;"><?= htmlspecialchars($empleado['supervisor'] ?? 'Sin supervisor') ?></span>
+            </div>
         </div>
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Teléfono</div>
-            <div><?= htmlspecialchars($empleado['telefono'] ?? '—') ?></div>
-        </div>
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Departamento</div>
-            <div><?= htmlspecialchars($empleado['departamento']) ?></div>
-        </div>
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Localidad</div>
-            <div><?= htmlspecialchars($empleado['localidad']) ?></div>
-        </div>
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Fecha de ingreso</div>
-            <div><?= $empleado['fecha_ingreso'] ?></div>
-            <div><strong>Antigüedad:</strong> <?= $empleado['anios_antiguedad'] ?> años</div>
-            <div><strong>Promedio evaluaciones:</strong> <?= $empleado['promedio_evaluaciones'] ?? '—' ?></div>
-        </div>
-        <div>
-            <div style="font-size:.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:.3rem">Supervisor</div>
-            <div><?= htmlspecialchars($empleado['supervisor'] ?? 'Sin supervisor') ?></div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+
+        <!-- Fichas destacadas (Métricas rápidas de rendimiento y tiempo) -->
+        <div style="display: flex; gap: 1.5rem;">
+            <div style="background: var(--bg-base); padding: 1rem 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.2rem; min-width: 180px;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Antigüedad</span>
+                <span style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary);"><?= $empleado['anios_antiguedad'] ?> años</span>
+            </div>
+            
+            <div style="background: var(--bg-base); padding: 1rem 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.2rem; min-width: 220px;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Promedio Evaluaciones</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.1rem;">
+                    <?php 
+                        $prom = $empleado['promedio_evaluaciones']; 
+                        $badgeClass = ($prom !== null && $prom >= 7) ? 'high' : 'low';
+                    ?>
+                    <span class="score-badge <?= $badgeClass ?>" style="font-size: 0.9rem; padding: 0.2rem 0.6rem;">
+                        <?= $prom !== null ? number_format($prom, 2) : '0.00' ?>
+                    </span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Puntaje general</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Historial de cargos -->
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header"><h2>Historial de cargos</h2></div>
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2>💼 Historial de cargos</h2>
+    </div>
     <?php if (empty($historial)): ?>
-        <div class="empty-state"><span class="empty-icon">🏷️</span>Sin historial de cargos.</div>
+        <div class="empty-state"><span class="empty-icon">🏷️</span>Sin historial de cargos registrados.</div>
     <?php else: ?>
     <table class="table">
         <thead>
             <tr>
-                <th>Cargo</th>
+                <th>Cargo asignado</th>
                 <th>Nivel</th>
                 <th>Banda salarial</th>
                 <th>Desde</th>
@@ -68,15 +98,15 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         <tbody>
         <?php foreach ($historial as $h): ?>
             <tr>
-                <td><?= htmlspecialchars($h['cargo']) ?></td>
-                <td><?= htmlspecialchars($h['nivel']) ?></td>
-                <td>$<?= number_format($h['banda_salarial_min'],0,',','.') ?> – $<?= number_format($h['banda_salarial_max'],0,',','.') ?></td>
+                <td><strong style="color: var(--text-primary);"><?= htmlspecialchars($h['cargo']) ?></strong></td>
+                <td><span class="badge badge-info" style="font-weight: 600;"><?= htmlspecialchars($h['nivel']) ?></span></td>
+                <td style="font-weight: 500; color: #475569;">$<?= number_format($h['banda_salarial_min'],0,',','.') ?> – $<?= number_format($h['banda_salarial_max'],0,',','.') ?></td>
                 <td><?= $h['fecha_desde'] ?></td>
                 <td>
                     <?php if ($h['fecha_hasta']): ?>
                         <?= $h['fecha_hasta'] ?>
                     <?php else: ?>
-                        <span class="badge badge-success">Actual</span>
+                        <span class="badge badge-success">Puesto Actual</span>
                     <?php endif; ?>
                 </td>
             </tr>
@@ -86,33 +116,36 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
     <?php endif; ?>
 </div>
 
-<!-- Evaluaciones -->
-<div class="card">
-    <div class="card-header"><h2>Evaluaciones de desempeño</h2></div>
+<!-- Evaluaciones de desempeño -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2>⭐ Evaluaciones de desempeño</h2>
+    </div>
     <?php if (empty($evaluaciones)): ?>
-        <div class="empty-state"><span class="empty-icon">⭐</span>Sin evaluaciones registradas.</div>
+        <div class="empty-state" style="padding: 2.5rem;"><span class="empty-icon">⭐</span>El empleado no cuenta con evaluaciones registradas todavía.</div>
     <?php else: ?>
     <table class="table">
         <thead>
             <tr>
                 <th>Período</th>
                 <th>Puntaje</th>
-                <th>Observaciones</th>
+                <th>Observaciones realizadas</th>
                 <th>Evaluador</th>
-                <th>Fecha</th>
+                <th>Fecha Evaluación</th>
             </tr>
         </thead>
         <tbody>
         <?php foreach ($evaluaciones as $ev):
-            $color = $ev['puntaje'] >= 9 ? 'badge-success'
-                   : ($ev['puntaje'] >= 7 ? 'badge-info' : 'badge-warning');
+            $scoreStyle = $ev['puntaje'] >= 8.5 ? 'high' : ($ev['puntaje'] >= 7.0 ? 'mid' : 'low');
         ?>
             <tr>
-                <td><?= $ev['periodo'] ?></td>
-                <td><span class="badge <?= $color ?>"><?= $ev['puntaje'] ?></span></td>
-                <td><?= htmlspecialchars($ev['observaciones'] ?? '—') ?></td>
+                <td><strong><?= $ev['periodo'] ?></strong></td>
+                <td><span class="score-badge <?= $scoreStyle ?>"><?= number_format($ev['puntaje'], 2) ?></span></td>
+                <td style="color: #475569; font-style: italic; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    "<?= htmlspecialchars($ev['observaciones'] ?? 'Sin comentarios adicionales') ?>"
+                </td>
                 <td><?= htmlspecialchars($ev['evaluador']) ?></td>
-                <td><?= $ev['fecha_evaluacion'] ?></td>
+                <td style="color: var(--text-muted);"><?= $ev['fecha_evaluacion'] ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>

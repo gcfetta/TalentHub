@@ -237,10 +237,6 @@ a { color: var(--accent); text-decoration: none; }
 }
 .table tbody tr:hover { background: var(--bg-hover); }
 
-/* Seccion de Empleados específica */
-.employee-meta { display: flex; flex-direction: column; }
-.employee-id { font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
-
 /* ── Badges / Chips estilizados ── */
 .badge {
     display: inline-block;
@@ -263,10 +259,28 @@ a { color: var(--accent); text-decoration: none; }
     font-size: 0.75rem;
     font-weight: 700;
     color: #fff;
+    text-align: center;
 }
 .score-badge.high { background: #10b981; }
 .score-badge.mid  { background: #3b82f6; }
 .score-badge.low  { background: #f59e0b; }
+
+/* Avatar redondo con inicial para las tablas */
+.avatar-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* Seccion de Empleados específica meta-datos */
+.employee-meta { display: flex; flex-direction: column; }
+.employee-meta strong { color: #1e293b; font-size: 0.9rem; }
+.employee-id { font-size: 0.75rem; color: #94a3b8; margin-top: 0.1rem; }
 
 /* ── Botones ── */
 .btn-sm {
@@ -290,29 +304,13 @@ a { color: var(--accent); text-decoration: none; }
 }
 .btn-primary:hover { background: #6d28d9; }
 
-/* Avatar redondo con inicial para las tablas */
-.avatar-circle {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.8rem;
-    display: inline-flex; align-items: center; justify-content: center;
-    margin-right: 0.5rem;
-}
-
-@media (max-width: 1024px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .dashboard-panels-grid { grid-template-columns: 1fr; }
-}
-
-/* ── Botones del Listado (Nómina) ── */
+/* Botones del Listado General (Nómina) */
 .btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1rem;
-    background: #7c3aed; /* Violeta principal */
+    background: #7c3aed;
     color: #ffffff !important;
     border-radius: 10px;
     font-size: 0.85rem;
@@ -321,70 +319,22 @@ a { color: var(--accent); text-decoration: none; }
     cursor: pointer;
     transition: background 0.2s;
 }
-.btn:hover {
-    background: #6d28d9;
-}
+.btn:hover { background: #6d28d9; }
 
 .btn-secondary {
     background: #f1f5f9 !important;
     color: #475569 !important;
     border: 1px solid #e2e8f0;
 }
-.btn-secondary:hover {
-    background: #e2e8f0 !important;
-}
+.btn-secondary:hover { background: #e2e8f0 !important; }
 
 .btn-danger {
     background: #fee2e2 !important;
     color: #ef4444 !important;
 }
-.btn-danger:hover {
-    background: #fca5a5 !important;
-}
+.btn-danger:hover { background: #fca5a5 !important; }
 
-/* ── Estructura de la tabla de Empleados ── */
-.avatar-circle {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 0.75rem;
-    flex-shrink: 0;
-}
-
-.employee-meta {
-    display: flex;
-    flex-direction: column;
-}
-.employee-meta strong {
-    color: #1e293b;
-    font-size: 0.9rem;
-}
-.employee-id {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 0.1rem;
-}
-
-/* ── Badges de puntuaciones y promedios ── */
-.score-badge {
-    display: inline-block;
-    padding: 0.3rem 0.6rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #ffffff;
-    text-align: center;
-}
-.score-badge.high { background: #10b981; } /* Verde para >= 7 */
-.score-badge.low  { background: #f59e0b; } /* Amarillo/Naranja para < 7 */
-
-/* Menú de acciones (Tres puntos) */
+/* Menú de acciones (Tres puntos, opcional) */
 .actions-trigger {
     text-align: right;
     color: #94a3b8;
@@ -394,6 +344,162 @@ a { color: var(--accent); text-decoration: none; }
     padding: 0.5rem;
     transition: color 0.2s;
 }
-.actions-trigger:hover {
-    color: #475569;
+.actions-trigger:hover { color: #475569; }
+
+/* ── Estructura de Formularios Modernos (Optimizado Ancho Horizontal Completo) ── */
+
+/* Envoltura de la tarjeta: se expande más horizontalmente con un tope elegante */
+.card.card-form-wrapper {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+/* El formulario interno aprovecha el espacio y reduce paddings para evitar cortes verticales */
+.form-container {
+    width: 100%;
+    padding: 1.5rem 2.5rem !important;
+    box-sizing: border-box;
+}
+
+/* Grilla de dos columnas: se ensancha de manera limpia al máximo de la tarjeta */
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 3rem; /* Espaciado horizontal amplio y vertical compacto */
+    margin-bottom: 0.2rem;
+}
+
+/* Grupo de control individual compacto */
+.form-group {
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Etiquetas (Labels) */
+.form-group label {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.form-group label span {
+    color: #ef4444; /* Asterisco de requerido */
+    margin-left: 0.15rem;
+}
+
+/* Campos de entrada: se expanden al 100% de la columna fluida */
+.form-control {
+    width: 100%;
+    padding: 0.8rem 1.2rem;
+    background: #f1f5f9;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    color: #334155;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+.form-control:focus {
+    background: #ffffff;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+}
+
+/* Ajuste específico para selects nativos */
+select.form-control {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1.2rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+/* Contenedor de botones de acción al fondo del formulario */
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 0.5rem;
+}
+
+/* Botones adaptados a la nueva estética de formularios */
+.btn-submit {
+    padding: 0.85rem 1.8rem;
+    background: #7c3aed;
+    color: #ffffff;
+    border: none;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.2s;
+}
+.btn-submit:hover { background: #6d28d9; }
+
+.btn-cancel {
+    padding: 0.85rem 1.8rem;
+    background: #ffffff;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.btn-cancel:hover { background: #f8fafc; color: #334155; }
+
+/* Botón superior Volver */
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+.btn-back:hover { background: #f8fafc; color: #1e293b; }
+
+/* Bloques informativos de Vista de Detalle (Ver Empleado) */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    padding: 0.5rem 0;
+}
+.detail-item { display: flex; flex-direction: column; gap: 0.4rem; }
+.detail-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.detail-value { font-size: 0.95rem; font-weight: 600; color: #1e293b; }
+
+/* Responsive Media Queries */
+@media (max-width: 1024px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-panels-grid { grid-template-columns: 1fr; }
+    .form-grid-2 { grid-template-columns: 1fr; gap: 1rem; }
 }
