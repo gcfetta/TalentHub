@@ -11,7 +11,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
 
 <div class="card">
     <div class="card-header">
-        <h2>Historial de cambios (registrado automáticamente por trigger)</h2>
+        <h2>Historial de cambios <span class="badge badge-info" style="margin-left: 0.5rem; font-size: 0.7rem;">Trigger automático</span></h2>
     </div>
 
     <?php if (empty($registros)): ?>
@@ -25,25 +25,48 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             <tr>
                 <th>#</th>
                 <th>Empleado</th>
-                <th>Cargo anterior</th>
-                <th>Cargo nuevo</th>
-                <th>Fecha de cambio</th>
+                <th>Cargo anterior & Banda</th>
+                <th>Cargo nuevo & Banda</th>
+                <th style="text-align: right; padding-right: 1.5rem;">Fecha de cambio</th>
             </tr>
         </thead>
         <tbody>
         <?php foreach ($registros as $r): ?>
             <tr>
-                <td>#<?= $r['auditoria_sal_id'] ?></td>
-                <td><?= htmlspecialchars($r['empleado']) ?> (<?= $r['legajo'] ?>)</td>
+                <td style="color: var(--text-muted); font-weight: 600;">#<?= $r['auditoria_sal_id'] ?></td>
+                
                 <td>
-                    <?= htmlspecialchars($r['cargo_anterior']) ?>
-                    <small style="color:var(--text-muted)">($<?= $r['ant_min'] ?> - $<?= $r['ant_max'] ?>)</small>
+                    <div class="employee-meta">
+                        <strong style="color: var(--text-primary); font-size: 0.92rem;"><?= htmlspecialchars($r['empleado']) ?></strong>
+                        <span class="employee-id">#<?= htmlspecialchars($r['legajo']) ?></span>
+                    </div>
                 </td>
+                
                 <td>
-                    <?= htmlspecialchars($r['cargo_nuevo']) ?>
-                    <small style="color:var(--text-muted)">($<?= $r['nvo_min'] ?> - $<?= $r['nvo_max'] ?>)</small>
+                    <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                        <span class="badge badge-secondary" style="align-self: flex-start; background: #e2e8f0; color: #475569; font-weight: 600;">
+                            <?= htmlspecialchars($r['cargo_anterior']) ?>
+                        </span>
+                        <small style="color: var(--text-muted); font-weight: 500; font-size: 0.78rem;">
+                            $<?= number_format($r['ant_min'], 0, ',', '.') ?> - $<?= number_format($r['ant_max'], 0, ',', '.') ?>
+                        </small>
+                    </div>
                 </td>
-                <td><?= $r['fecha_cambio'] ?></td>
+                
+                <td>
+                    <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                        <span class="badge badge-success" style="align-self: flex-start; background: rgba(16, 185, 129, 0.1); color: var(--success); font-weight: 700;">
+                            <?= htmlspecialchars($r['cargo_nuevo']) ?>
+                        </span>
+                        <small style="color: var(--text-muted); font-weight: 500; font-size: 0.78rem;">
+                            $<?= number_format($r['nvo_min'], 0, ',', '.') ?> - $<?= number_format($r['nvo_max'], 0, ',', '.') ?>
+                        </small>
+                    </div>
+                </td>
+                
+                <td style="text-align: right; padding-right: 1.5rem; color: var(--text-muted); font-weight: 500;">
+                    <?= $r['fecha_change'] ?? $r['fecha_cambio'] ?>
+                </td>
             </tr>
         <?php endforeach; ?>
         </tbody>
