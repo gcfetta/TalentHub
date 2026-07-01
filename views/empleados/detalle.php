@@ -2,6 +2,8 @@
 // views/empleados/detalle.php
 require_once __DIR__ . '/../../views/layout/header.php';
 require_once __DIR__ . '/../../views/layout/sidebar.php';
+
+$es_empleado_raso = ($_SESSION['rol'] ?? '') === 'Empleado';
 ?>
 
 <div class="page-header">
@@ -60,6 +62,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                 <span style="font-size: 1.1rem; font-weight: 800; color: var(--text-primary);"><?= $empleado['anios_antiguedad'] ?> años</span>
             </div>
             
+            <?php if (!$es_empleado_raso): ?>
             <div style="background: var(--bg-base); padding: 1rem 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.2rem; min-width: 220px;">
                 <span style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Promedio Evaluaciones</span>
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.1rem;">
@@ -73,6 +76,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                     <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Puntaje general</span>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -90,7 +94,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             <tr>
                 <th>Cargo asignado</th>
                 <th>Nivel</th>
-                <th>Banda salarial</th>
+                <?php if (!$es_empleado_raso): ?><th>Banda salarial</th><?php endif; ?>
                 <th>Desde</th>
                 <th>Hasta</th>
             </tr>
@@ -100,7 +104,9 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             <tr>
                 <td><strong style="color: var(--text-primary);"><?= htmlspecialchars($h['cargo']) ?></strong></td>
                 <td><span class="badge badge-info" style="font-weight: 600;"><?= htmlspecialchars($h['nivel']) ?></span></td>
+                <?php if (!$es_empleado_raso): ?>
                 <td style="font-weight: 500; color: #475569;">$<?= number_format($h['banda_salarial_min'],0,',','.') ?> – $<?= number_format($h['banda_salarial_max'],0,',','.') ?></td>
+                <?php endif; ?>
                 <td><?= $h['fecha_desde'] ?></td>
                 <td>
                     <?php if ($h['fecha_hasta']): ?>
@@ -117,6 +123,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
 </div>
 
 <!-- Evaluaciones de desempeño -->
+<?php if (!$es_empleado_raso): ?>
 <div class="card" style="margin-bottom: 2rem;">
     <div class="card-header">
         <h2>⭐ Evaluaciones de desempeño</h2>
@@ -152,5 +159,6 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
     </table>
     <?php endif; ?>
 </div>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/../../views/layout/footer.php'; ?>
