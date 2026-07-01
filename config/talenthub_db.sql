@@ -348,35 +348,30 @@ END //
 --  Contexto PDF: "Los vigilantes silenciosos de la base de datos"
 -- ============================================================
 
--- AFTER UPDATE en Historial_Cargo: registra en Auditoria_Salario
--- cada cambio de cargo. Equivale exactamente al "Trigger de
--- Historial Salarial" del material de cátedra.
+-- AFTER INSERT en Historial_Cargo: registra en Auditoria_Salario
+-- cada cambio de cargo. El modelo de historial cierra la fila
+-- anterior (fecha_hasta) e inserta una fila nueva, por eso el
+-- trigger dispara en INSERT y busca la fila previa del empleado.
 CREATE TRIGGER tr_auditoria_salario
-AFTER UPDATE ON Historial_Cargo
+AFTER INSERT ON Historial_Cargo
 FOR EACH ROW
 BEGIN
-    IF OLD.cargo_cod <> NEW.cargo_cod THEN
+    DECLARE v_cargo_anterior INT DEFAULT NULL;
+    DECLARE v_historial_anterior INT DEFAULT NULL;
+
+    SELECT historial_id, cargo_cod
+      INTO v_historial_anterior, v_cargo_anterior
+    FROM Historial_Cargo
+    WHERE legajo = NEW.legajo
+      AND historial_id <> NEW.historial_id
+    ORDER BY fecha_desde DESC, historial_id DESC
+    LIMIT 1;
+
+    IF v_cargo_anterior IS NOT NULL AND v_cargo_anterior <> NEW.cargo_cod THEN
         INSERT INTO Auditoria_Salario
             (legajo, historial_id, cargo_anterior_cod, cargo_nuevo_cod, fecha_cambio)
         VALUES
-            (NEW.legajo, NEW.historial_id, OLD.cargo_cod, NEW.cargo_cod, NOW());
-    END IF;
-END //
-
--- BEFORE INSERT en Historial_Cargo: cierra el cargo activo
--- anterior para que nunca existan dos registros abiertos
--- (fecha_hasta IS NULL) para el mismo empleado.
--- La variable @skip_trigger desactiva la lógica durante la
--- carga de datos semilla que ya tiene fechas explícitas.
-CREATE TRIGGER tr_cerrar_cargo_anterior
-BEFORE INSERT ON Historial_Cargo
-FOR EACH ROW
-BEGIN
-    IF @skip_trigger IS NULL OR @skip_trigger = 0 THEN
-        UPDATE Historial_Cargo
-        SET fecha_hasta = NEW.fecha_desde - INTERVAL 1 DAY
-        WHERE legajo      = NEW.legajo
-          AND fecha_hasta IS NULL;
+            (NEW.legajo, NEW.historial_id, v_cargo_anterior, NEW.cargo_cod, NOW());
     END IF;
 END //
 
