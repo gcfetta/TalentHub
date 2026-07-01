@@ -4,8 +4,8 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'talenthub_db');
 define('DB_USER', 'talenthub_app');
-// define('DB_PASS', 'AppPass2026!');
-define('DB_PASS', '');  
+define('DB_PASS', 'AppPass2026!');
+
 
 try {
     $pdo = new PDO(
