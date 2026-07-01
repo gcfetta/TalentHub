@@ -18,6 +18,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         <h2>Nómina</h2>
         <?php if (in_array($_SESSION['rol'], ['Administrador','RRHH'])): ?>
             <a href="index.php?page=empleados&accion=nuevo" class="btn">+ Nuevo empleado</a>
+            <a href="index.php?page=empleados&accion=exportar" class="btn btn-secondary">⬇ Exportar CSV</a>
         <?php endif; ?>
     </div>
 

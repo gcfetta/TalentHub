@@ -26,6 +26,7 @@ class EmpleadoController {
             'editar'   => $this->formulario(),
             'guardar'  => $this->guardar(),
             'eliminar' => $this->eliminar(),
+            'exportar' => $this->exportarCSV(),
             default    => $this->listado(),
         };
     }
@@ -145,6 +146,33 @@ class EmpleadoController {
             }
         }
         header('Location: index.php?page=empleados');
+        exit;
+    }
+
+    private function exportarCSV(): void {
+        $pdo = $this->modelo->getPdo();
+        $stmt = $pdo->query(
+            "SELECT e.legajo,
+                    CONCAT(e.nombre, ' ', e.apellido) AS empleado,
+                    c.nombre AS cargo,
+                    c.banda_salarial_min,
+                    c.banda_salarial_max,
+                    calcular_antiguedad(e.fecha_ingreso) AS anios_antiguedad
+             FROM Empleado e
+             LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
+             LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
+             WHERE e.activo = 1"
+        );
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=reporte_sueldos_talenthub.csv');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['legajo','empleado','cargo','banda_salarial_min','banda_salarial_max','anios_antiguedad']);
+        while ($fila = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            fputcsv($out, $fila);
+        }
+        fclose($out);
         exit;
     }
 }
