@@ -7,7 +7,7 @@ require_once 'config/db.php';
 $page = $_GET['page'] ?? 'login';
 
 // Páginas que NO requieren login
-$paginas_publicas = ['login', 'logout'];
+$paginas_publicas = ['login', 'logout', 'activar_cuenta'];
 
 // Si la página es protegida, aplicar guard
 if (!in_array($page, $paginas_publicas)) {
@@ -27,7 +27,19 @@ switch ($page) {
         require_once 'controllers/AuthController.php';
         $ctrl = new AuthController($pdo);
         $ctrl->logout();
-        break;
+    break;
+
+    case 'activar_cuenta':
+        require_once 'controllers/AuthController.php';
+        $ctrl = new AuthController($pdo);
+        $ctrl->activarCuenta();
+    break;
+
+    case 'cambiar_password':
+        require_once 'controllers/AuthController.php';
+        $ctrl = new AuthController($pdo);
+        $ctrl->cambiarPassword();
+    break;
 
     case 'dashboard':
         require_once 'controllers/DashboardController.php';

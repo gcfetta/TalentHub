@@ -179,6 +179,9 @@ CREATE TABLE Usuario (
     password_hash VARCHAR(255) NOT NULL,
     rol           ENUM('Administrador','RRHH','Supervisor','Empleado') NOT NULL DEFAULT 'Empleado',
     activo        TINYINT(1)   NOT NULL DEFAULT 1,
+    -- En 1 cuando la cuenta se activó con password = legajo (autogenerada);
+    -- pasa a 0 cuando el empleado la cambia por una propia.
+    debe_cambiar_password TINYINT(1) NOT NULL DEFAULT 0,
     CONSTRAINT fk_usuario_empleado
         FOREIGN KEY (legajo) REFERENCES Empleado(legajo)
 );
@@ -375,6 +378,48 @@ BEGIN
         WHERE legajo      = NEW.legajo
           AND fecha_hasta IS NULL;
     END IF;
+END //
+
+-- Activa la cuenta de un empleado ya cargado en RRHH: valida
+-- legajo + mail contra Empleado y crea el Usuario con rol fijo
+-- 'Empleado' y password = legajo (hasheado desde PHP), forzando
+-- el cambio en el primer login (debe_cambiar_password = 1).
+CREATE PROCEDURE activar_cuenta_empleado(
+    IN  p_legajo         INT,
+    IN  p_mail           VARCHAR(150),
+    IN  p_password_hash  VARCHAR(255),
+    OUT p_usuario_id     INT
+)
+BEGIN
+    DECLARE v_mail_real VARCHAR(150);
+    DECLARE v_activo    TINYINT;
+    DECLARE v_ya_tiene  INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    SELECT mail, activo INTO v_mail_real, v_activo
+    FROM Empleado WHERE legajo = p_legajo;
+
+    IF v_mail_real IS NULL OR v_activo = 0 OR v_mail_real <> p_mail THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Error: los datos ingresados no coinciden con ningún empleado activo.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_ya_tiene FROM Usuario WHERE legajo = p_legajo;
+    IF v_ya_tiene > 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Error: este legajo ya tiene una cuenta activada.';
+    END IF;
+
+    START TRANSACTION;
+        INSERT INTO Usuario (legajo, username, password_hash, rol, activo, debe_cambiar_password)
+        VALUES (p_legajo, CONCAT('legajo_', p_legajo), p_password_hash, 'Empleado', 1, 1);
+        SET p_usuario_id = LAST_INSERT_ID();
+    COMMIT;
 END //
 
 DELIMITER ;

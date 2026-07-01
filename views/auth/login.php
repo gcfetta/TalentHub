@@ -112,8 +112,8 @@ $motivo = $_GET['motivo'] ?? '';
     <form method="POST" action="index.php?page=login">
         <div class="form-group">
             <label for="username">Usuario</label>
-            <input type="text" id="username" name="username" 
-                   placeholder="Ingresá tu usuario" required autofocus>
+            <input type="number" id="legajo" name="legajo" 
+                    placeholder="Ingresá tu legajo" required autofocus>
         </div>
         <div class="form-group">
             <label for="password">Contraseña</label>
@@ -121,6 +121,7 @@ $motivo = $_GET['motivo'] ?? '';
                    placeholder="Ingresá tu contraseña" required>
         </div>
         <button type="submit" class="btn-login">Ingresar →</button>
+        <a href="index.php?page=activar_cuenta">¿Todavía no activaste tu cuenta?</a>
     </form>
 
     <div class="credenciales">

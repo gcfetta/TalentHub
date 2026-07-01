@@ -14,34 +14,75 @@ class AuthController {
         $error = '';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $username = trim($_POST['username'] ?? '');
+            $legajo   = trim($_POST['legajo'] ?? '');
             $password = trim($_POST['password'] ?? '');
 
-            if (empty($username) || empty($password)) {
+            if (empty($legajo) || empty($password)) {
                 $error = 'Completá todos los campos.';
+            } elseif (!ctype_digit($legajo)) {
+                $error = 'Legajo o contraseña incorrectos.';
             } else {
-                $user = $this->modelo->login($username, $password);
+                $user = $this->modelo->login((int)$legajo, $password);
 
                 if ($user) {
                     session_regenerate_id(true); // previene Session Fixation
 
                     $_SESSION['usuario_id']  = $user['usuario_id'];
-                    $_SESSION['username']    = $user['username'];
                     $_SESSION['rol']         = $user['rol'];
                     $_SESSION['legajo']      = $user['legajo'];
                     $_SESSION['nombre']      = $user['nombre'] . ' ' . $user['apellido'];
                     $_SESSION['ultimo_acceso'] = time();
 
-                    header('Location: index.php?page=dashboard');
+                    if ($user['debe_cambiar_password']) {
+                        header('Location: index.php?page=cambiar_password');
+                    } else {
+                        header('Location: index.php?page=dashboard');
+                    }
                     exit;
                 } else {
-                    $error = 'Usuario o contraseña incorrectos.';
+                    $error = 'Legajo o contraseña incorrectos.';
                 }
             }
         }
 
         // Mostrar la vista de login
         require_once __DIR__ . '/../views/auth/login.php';
+    }
+
+    public function activarCuenta(): void {
+    $error = '';
+    $ok    = false;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_activacion'] ?? '', $_POST['csrf_token'])) {
+            $error = 'Token de seguridad inválido, recargá la página e intentá de nuevo.';
+        } else {
+            $legajo = trim($_POST['legajo'] ?? '');
+            $mail   = trim($_POST['mail'] ?? '');
+
+            if (empty($legajo) || empty($mail)) {
+                $error = 'Completá todos los campos.';
+            } elseif (!ctype_digit($legajo)) {
+                $error = 'Los datos ingresados no coinciden con ningún empleado activo.';
+            } else {
+                try {
+                    $this->modelo->activarCuenta((int)$legajo, $mail);
+                    $ok = true;
+                    unset($_SESSION['csrf_activacion']); // token de un solo uso
+                } catch (Exception $e) {
+                    $error = 'Los datos ingresados no coinciden con ningún empleado activo, o ese legajo ya tiene una cuenta.';
+                }
+            }
+        }
+    }
+
+    // Token nuevo para el próximo intento (evita reenvío del mismo form)
+    if (empty($_SESSION['csrf_activacion'])) {
+            $_SESSION['csrf_activacion'] = bin2hex(random_bytes(32));
+        }
+        $csrf_token = $_SESSION['csrf_activacion'];
+
+        require_once __DIR__ . '/../views/auth/activar_cuenta.php';
     }
 
     public function logout(): void {
