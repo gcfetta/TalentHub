@@ -25,12 +25,12 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
         <div class="form-grid-2">
             <div class="form-group">
                 <label>Legajo <span>*</span></label>
-                <input type="number" name="legajo" class="form-control"
-                       value="<?= htmlspecialchars($empleado['legajo'] ?? '') ?>"
-                       <?= $es_nuevo ? '' : 'readonly' ?> required>
+                <input type="number" class="form-control"
+                        value="<?= htmlspecialchars($empleado['legajo'] ?? $proximo_legajo ?? '') ?>"
+                        disabled>
+                <input type="hidden" name="legajo"
+                        value="<?= htmlspecialchars($empleado['legajo'] ?? $proximo_legajo ?? '') ?>">
             </div>
-            <div class="form-group">
-                </div>
         </div>
 
         <div class="form-grid-2">
@@ -154,28 +154,40 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             </div>
         </div>
 
-        <?php if ($es_nuevo): ?>
         <div class="form-grid-2">
             <div class="form-group" style="position: relative;">
-                <label>Cargo inicial</label>
+                <label><?= $es_nuevo ? 'Cargo inicial' : 'Cargo' ?></label>
                 <input type="text" id="busqueda-cargo" class="form-control" autocomplete="off"
-                       placeholder="Escribí para buscar cargo..."
-                       value="">
-                <input type="hidden" name="cargo_cod" id="cargo-seleccionado" value="">
-                
+                    placeholder="Escribí para buscar cargo..."
+                    value="<?php
+                            if (!empty($cargo_actual)) {
+                                foreach ($cargos as $c) {
+                                    if ($c['cargo_cod'] == $cargo_actual) {
+                                        echo htmlspecialchars($c['nombre'] . ' (' . $c['nivel'] . ')');
+                                        break;
+                                    }
+                                }
+                            }
+                    ?>">
+                <input type="hidden" name="cargo_cod" id="cargo-seleccionado"
+                    value="<?= htmlspecialchars((string)($cargo_actual ?? '')) ?>">
+
                 <div id="lista-desplegable-cargos" 
-                     style="position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; background-color: #ffffff; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 997; display: none; margin-top: 0.25rem;">
+                    style="position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; background-color: #ffffff; border: 2px solid var(--accent); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 997; display: none; margin-top: 0.25rem;">
                     <div class="opcion-cargo" 
-                         style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9rem; background-color: #ffffff; color: var(--text-muted);"
-                         data-cod="" data-busqueda="">
+                        style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9rem; background-color: #ffffff; color: var(--text-muted);"
+                        data-cod="" data-busqueda="">
                         <em>Sin asignar por ahora</em>
                     </div>
-                    <?php foreach ($cargos as $c): ?>
+                    <?php foreach ($cargos as $c):
+                        $cant = $ocupantes_por_cargo[$c['cargo_cod']] ?? 0;
+                        $etiqueta_cant = $cant === 1 ? '1 activo' : "{$cant} activos";
+                    ?>
                         <div class="opcion-cargo" 
-                             style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9rem; background-color: #ffffff; color: #1e293b;"
-                             data-cod="<?= htmlspecialchars($c['cargo_cod']) ?>" 
-                             data-busqueda="<?= htmlspecialchars(mb_strtolower($c['nombre'] . ' ' . $c['nivel'])) ?>">
-                            <strong><?= htmlspecialchars($c['nombre']) ?></strong> <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(<?= htmlspecialchars($c['nivel']) ?>)</span>
+                            style="padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid rgba(0,0,0,0.04); font-size: 0.9rem; background-color: #ffffff; color: #1e293b;"
+                            data-cod="<?= htmlspecialchars($c['cargo_cod']) ?>" 
+                            data-busqueda="<?= htmlspecialchars(mb_strtolower($c['nombre'] . ' ' . $c['nivel'])) ?>">
+                            <strong><?= htmlspecialchars($c['nombre']) ?></strong> <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(<?= htmlspecialchars($c['nivel']) ?> · <?= $etiqueta_cant ?>)</span>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -183,7 +195,6 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             <div class="form-group">
                 </div>
         </div>
-        <?php endif; ?>
 
         <div class="form-actions" style="justify-content: flex-start;">
             <button type="submit" class="btn-submit">💾 Guardar</button>

@@ -503,3 +503,31 @@ select.form-control {
     .dashboard-panels-grid { grid-template-columns: 1fr; }
     .form-grid-2 { grid-template-columns: 1fr; gap: 1rem; }
 }
+
+/* ── Alertas y Mensajes de Error Modernizados ── */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;     /* Bordes redondeados idénticos a las tarjetas */
+    margin-bottom: 1.5rem;   /* Espaciado limpio antes del formulario */
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;            /* Separación para el icono */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.alert-error {
+    background-color: #fef2f2;      /* Fondo rojo pastel muy sutil */
+    color: #991b1b;                 /* Texto rojo oscuro para excelente contraste */
+    border: 1px solid #fee2e2;
+    border-left: 4px solid #ef4444; /* Barra lateral roja intensa de la maqueta */
+}
+
+/* Opcional: Si usas alertas de éxito en otras vistas, unificalas también */
+.alert-success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #dcfce7;
+    border-left: 4px solid #10b981;
+}

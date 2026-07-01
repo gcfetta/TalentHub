@@ -53,10 +53,13 @@ class EmpleadoController {
     private function formulario(): void {
         $legajo   = (int)($_GET['legajo'] ?? 0);
         $empleado = $legajo ? $this->modelo->obtenerPorLegajo($legajo) : null;
-        $cargos       = $this->modelo->obtenerCargos();
+        $cargos        = $this->modelo->obtenerCargos();
         $departamentos = $this->modelo->obtenerDepartamentos();
-        $localidades  = $this->modelo->obtenerLocalidades();
-        $supervisores = $this->modelo->obtenerParaSelect();
+        $localidades   = $this->modelo->obtenerLocalidades();
+        $supervisores  = $this->modelo->obtenerParaSelect();
+        $cargo_actual  = $legajo ? $this->modelo->obtenerCargoActual($legajo) : null;
+        $proximo_legajo = $empleado === null ? $this->modelo->obtenerProximoLegajo() : null;
+        $ocupantes_por_cargo = $this->modelo->contarOcupantesPorCargo();
         $error = '';
         require_once __DIR__ . '/../views/empleados/formulario.php';
     }
@@ -67,8 +70,10 @@ class EmpleadoController {
             exit;
         }
 
-        $legajo   = (int)filter_input(INPUT_POST, 'legajo',   FILTER_SANITIZE_NUMBER_INT);
-        $es_nuevo = (bool)filter_input(INPUT_POST, 'es_nuevo', FILTER_SANITIZE_NUMBER_INT);
+        error_log('POST recibido: ' . print_r($_POST, true)); // TEMPORAL - borrar después
+
+        $legajo   = (int)($_POST['legajo']   ?? 0);
+        $es_nuevo = !empty($_POST['es_nuevo']);
 
         $datos = [
             ':legajo'            => $legajo,
@@ -90,6 +95,9 @@ class EmpleadoController {
             $localidades   = $this->modelo->obtenerLocalidades();
             $supervisores  = $this->modelo->obtenerParaSelect();
             $empleado      = $es_nuevo ? null : $this->modelo->obtenerPorLegajo($legajo);
+            $cargo_actual  = $legajo ? $this->modelo->obtenerCargoActual($legajo) : null;
+            $proximo_legajo = $es_nuevo ? $this->modelo->obtenerProximoLegajo() : null;
+            $ocupantes_por_cargo = $this->modelo->contarOcupantesPorCargo();
             require_once __DIR__ . '/../views/empleados/formulario.php';
         };
 
@@ -115,15 +123,13 @@ class EmpleadoController {
             return;
         }
 
-        if ($es_nuevo && $cargo_cod) {
-            $ocupante = $this->modelo->cargoOcupado($cargo_cod);
+        if ($cargo_cod && $this->modelo->esCargoGerencial($cargo_cod)) {
+            $ocupante = $this->modelo->cargoOcupado($cargo_cod, $es_nuevo ? null : $legajo);
             if ($ocupante) {
-                $recargar("Ese cargo ya está ocupado por {$ocupante['nombre_completo']} (legajo {$ocupante['legajo']}). Elegí otro cargo o dejalo sin asignar.");
+                $recargar("Ese cargo gerencial ya está ocupado por {$ocupante['nombre_completo']} (legajo {$ocupante['legajo']}). Los cargos gerenciales admiten un solo ocupante activo.");
                 return;
             }
-        }
-
-        try {
+        } try {
             if ($es_nuevo) {
                 $this->modelo->crear($datos);
 
@@ -137,7 +143,26 @@ class EmpleadoController {
             } else {
                 $this->modelo->actualizar($datos);
 
-                // Si edité mis propios datos, refresco el sidebar sin recargar de más
+                $cargo_previo = $this->modelo->obtenerCargoActual($legajo);
+                if ($cargo_cod !== $cargo_previo) {
+                    $pdo = $this->modelo->getPdo();
+                    $hoy = date('Y-m-d');
+
+                    if ($cargo_previo !== null) {
+                        $pdo->prepare(
+                            "UPDATE Historial_Cargo SET fecha_hasta = ?
+                            WHERE legajo = ? AND cargo_cod = ? AND fecha_hasta IS NULL"
+                        )->execute([$hoy, $legajo, $cargo_previo]);
+                    }
+
+                    if ($cargo_cod !== null) {
+                        $pdo->prepare(
+                            "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde)
+                            VALUES (?, ?, ?)"
+                        )->execute([$legajo, $cargo_cod, $hoy]);
+                    }
+                }
+
                 if ($legajo === (int)($_SESSION['legajo'] ?? 0)) {
                     $_SESSION['nombre'] = $datos[':nombre'] . ' ' . $datos[':apellido'];
                 }

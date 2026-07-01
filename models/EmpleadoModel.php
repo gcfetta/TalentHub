@@ -132,17 +132,35 @@ class EmpleadoModel {
         )->fetchAll();
     }
 
+    // Cargo actual activo de un empleado (o null si no tiene)
+    public function obtenerCargoActual(int $legajo): ?int {
+        $sql = "SELECT cargo_cod FROM Historial_Cargo
+                WHERE legajo = :legajo AND fecha_hasta IS NULL
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':legajo' => $legajo]);
+        $cod = $stmt->fetchColumn();
+        return $cod !== false ? (int)$cod : null;
+    }
+
     // Devuelve el empleado activo que ya ocupa ese cargo, o false si está libre
-    public function cargoOcupado(int $cargo_cod): array|false {
+    public function cargoOcupado(int $cargo_cod, ?int $excluir_legajo = null): array|false {
         $sql = "SELECT e.legajo, CONCAT(e.nombre, ' ', e.apellido) AS nombre_completo
                 FROM Historial_Cargo hc
                 JOIN Empleado e ON e.legajo = hc.legajo
                 WHERE hc.cargo_cod = :cargo_cod
                 AND hc.fecha_hasta IS NULL
-                AND e.activo = 1
-                LIMIT 1";
+                AND e.activo = 1";
+        if ($excluir_legajo !== null) {
+            $sql .= " AND e.legajo != :excluir_legajo";
+        }
+        $sql .= " LIMIT 1";
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':cargo_cod' => $cargo_cod]);
+        $params = [':cargo_cod' => $cargo_cod];
+        if ($excluir_legajo !== null) {
+            $params[':excluir_legajo'] = $excluir_legajo;
+        }
+        $stmt->execute($params);
         return $stmt->fetch();
     }
 
@@ -150,5 +168,37 @@ class EmpleadoModel {
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM Empleado WHERE legajo = ?");
         $stmt->execute([$legajo]);
         return (bool) $stmt->fetchColumn();
+    }
+
+    // Próximo legajo disponible (correlativo simple)
+    public function obtenerProximoLegajo(): int {
+        $max = $this->pdo->query("SELECT MAX(legajo) FROM Empleado")->fetchColumn();
+        return $max ? ((int)$max + 1) : 1001;
+    }
+
+    // Cantidad de empleados activos por cargo (para mostrar en el selector)
+    public function contarOcupantesPorCargo(): array {
+        $sql = "SELECT hc.cargo_cod, COUNT(*) AS cantidad
+                FROM Historial_Cargo hc
+                JOIN Empleado e ON e.legajo = hc.legajo
+                WHERE hc.fecha_hasta IS NULL AND e.activo = 1
+                GROUP BY hc.cargo_cod";
+        $filas = $this->pdo->query($sql)->fetchAll();
+        $conteo = [];
+        foreach ($filas as $f) {
+            $conteo[(int)$f['cargo_cod']] = (int)$f['cantidad'];
+        }
+        return $conteo;
+    }
+
+    // Indica si un cargo es de nivel gerencial (único por definición)
+    public function esCargoGerencial(int $cargo_cod): bool {
+        $stmt = $this->pdo->prepare(
+            "SELECT nj.nivel_cod FROM Cargo c
+            JOIN Nivel_Jerarquico nj ON nj.nivel_cod = c.nivel_cod
+            WHERE c.cargo_cod = ?"
+        );
+        $stmt->execute([$cargo_cod]);
+        return (int)$stmt->fetchColumn() === 1;
     }
 }
