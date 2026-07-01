@@ -455,6 +455,30 @@ LEFT JOIN Evaluacion_Desempeno ed ON ed.legajo = e.legajo
 WHERE e.activo = 1
 GROUP BY e.legajo, e.nombre, e.apellido, d.nombre;
 
+-- Vista simple, SIN join/agregación/subconsulta → ES actualizable.
+-- Mapea 1 a 1 contra Empleado, MySQL puede resolver el UPDATE/INSERT
+-- directo sobre la tabla base. Ejemplo práctico para la defensa:
+-- diferencia entre vista actualizable (esta) y no actualizable
+-- (las tres de arriba, que usan JOIN/GROUP BY/subconsulta).
+CREATE OR REPLACE VIEW v_empleados_activos AS
+SELECT
+    legajo,
+    nombre,
+    apellido,
+    mail,
+    fecha_ingreso,
+    depto_cod,
+    localidad_cod,
+    supervisor_legajo
+FROM Empleado
+WHERE activo = 1;
+
+-- Prueba de que admite escritura (ejecutar para la defensa):
+-- UPDATE v_empleados_activos SET mail = 'nuevo@mail.com' WHERE legajo = 1001;
+-- Esto modifica la fila real en Empleado. Intentar lo mismo contra
+-- v_empleados_resumen falla con Error 1288 (non-updatable view)
+-- porque tiene JOIN y columnas calculadas.
+
 -- ============================================================
 --  BLOQUE 11 – DCL: usuarios con mínimo privilegio
 --  Contexto PDF: principio de mínimo privilegio,
