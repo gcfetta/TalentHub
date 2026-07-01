@@ -234,6 +234,13 @@ CREATE PROCEDURE registrar_solicitud_licencia(
     OUT p_nro_solicitud     INT
 )
 BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
     DECLARE v_dias_max       INT;
     DECLARE v_dias_usados    INT;
     DECLARE v_dias_restantes INT;
@@ -290,6 +297,12 @@ CREATE PROCEDURE cambiar_estado_solicitud(
     IN p_supervisor_legajo INT
 )
 BEGIN
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
     START TRANSACTION;
 
         INSERT INTO Auditoria_Estado_Solicitud
@@ -439,6 +452,11 @@ GRANT SELECT ON talenthub_db.v_solicitudes_estado_actual
     TO 'talenthub_reporter'@'localhost';
 GRANT SELECT ON talenthub_db.v_ranking_evaluaciones
     TO 'talenthub_reporter'@'localhost';
+
+GRANT SELECT, INSERT, UPDATE
+    ON talenthub_db.* TO 'talenthub_app'@'localhost';
+GRANT EXECUTE
+    ON talenthub_db.* TO 'talenthub_app'@'localhost';
 
 FLUSH PRIVILEGES;
 
