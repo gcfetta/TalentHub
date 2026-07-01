@@ -89,12 +89,14 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
             <div class="form-group">
                 <label>Fecha de inicio <span>*</span></label>
                 <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control"
-                       value="<?= $_POST['fecha_inicio'] ?? '' ?>" required>
+                    value="<?= $_POST['fecha_inicio'] ?? '' ?>"
+                    min="<?= date('Y-m-d') ?>" required>
             </div>
             <div class="form-group">
                 <label>Fecha de fin <span>*</span></label>
                 <input type="date" name="fecha_fin" id="fecha_fin" class="form-control"
-                       value="<?= $_POST['fecha_fin'] ?? '' ?>" required>
+                    value="<?= $_POST['fecha_fin'] ?? '' ?>"
+                    min="<?= date('Y-m-d') ?>" required>
             </div>
         </div>
 

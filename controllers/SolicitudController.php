@@ -101,6 +101,8 @@ class SolicitudController {
         // Validación
         if (!$legajo || !$tipo_lic || !$fecha_ini || !$fecha_fin) {
             $error = 'Completá todos los campos obligatorios.';
+        } elseif ($fecha_ini < date('Y-m-d')) {
+            $error = 'La fecha de inicio no puede ser anterior a hoy.';
         } elseif ($fecha_fin < $fecha_ini) {
             $error = 'La fecha de fin no puede ser anterior a la de inicio.';
         }
