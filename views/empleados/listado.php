@@ -2,6 +2,8 @@
 // views/empleados/listado.php
 require_once __DIR__ . '/../../views/layout/header.php';
 require_once __DIR__ . '/../../views/layout/sidebar.php';
+
+$es_empleado_raso = ($_SESSION['rol'] ?? '') === 'Empleado';
 ?>
 
 <div class="page-header">
@@ -54,7 +56,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                     <th>Departamento</th>
                     <th>Localidad</th>
                     <th>Ingreso</th>
-                    <th>Evaluación</th>
+                    <?php if (!$es_empleado_raso): ?><th>Evaluación</th><?php endif; ?>
                     <th style="text-align: right; padding-right: 1.5rem;">Acciones</th>
                 </tr>
             </thead>
@@ -87,6 +89,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                 <td><?= htmlspecialchars($emp['fecha_ingreso'] ?? '—') ?></td>
                 
                 <!-- Columna de Promedio Evaluaciones -->
+                <?php if (!$es_empleado_raso): ?>
                 <td>
                     <?php if ($promedio !== null): ?>
                         <span class="score-badge <?= $scoreStyle ?>">
@@ -96,6 +99,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                         <span class="score-badge low">0.0</span>
                     <?php endif; ?>
                 </td>
+                <?php endif; ?>
                 
                 <!-- Botones de Acción perfectamente alineados a la derecha -->
                 <td style="text-align: right; padding-right: 1.5rem; vertical-align: middle;">

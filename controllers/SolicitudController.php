@@ -126,6 +126,25 @@ class SolicitudController {
             }
         }
 
+        // Validación del certificado adjunto
+        $archivo_certificado = null;
+        if (!$error && isset($_FILES['certificado']) && $_FILES['certificado']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['certificado']['error'] !== UPLOAD_ERR_OK) {
+                $error = 'Error al subir el archivo.';
+            } elseif (strtolower(pathinfo($_FILES['certificado']['name'], PATHINFO_EXTENSION)) !== 'pdf'
+                      || mime_content_type($_FILES['certificado']['tmp_name']) !== 'application/pdf') {
+                $error = 'El certificado debe ser un archivo PDF válido.';
+            } elseif ($_FILES['certificado']['size'] > 5 * 1024 * 1024) {
+                $error = 'El certificado no puede superar los 5MB.';
+            } else {
+                $archivo_certificado = $_FILES['certificado'];
+            }
+        }
+
+        if (!$error && !empty($tipo_info['requiere_certificado']) && !$archivo_certificado) {
+            $error = 'Este tipo de licencia requiere adjuntar un certificado en PDF.';
+        }
+
         if ($error) {
             $tipos     = $this->modelo->obtenerTiposLicencia();
             $empleados = $this->modelo->obtenerEmpleadosVisibles((int)$_SESSION['legajo'], $_SESSION['rol']);
@@ -143,6 +162,17 @@ class SolicitudController {
 
         try {
             $nro = $this->modelo->crear($datos, (int)$_SESSION['legajo']);
+
+            if ($archivo_certificado) {
+                $dirDestino = __DIR__ . '/../uploads/licencias/';
+                if (!is_dir($dirDestino)) {
+                    mkdir($dirDestino, 0755, true);
+                }
+                $nombreArchivo = 'certificado_' . $nro . '_' . uniqid() . '.pdf';
+                move_uploaded_file($archivo_certificado['tmp_name'], $dirDestino . $nombreArchivo);
+                $this->modelo->agregarDocumento($nro, 'Certificado médico', 'uploads/licencias/' . $nombreArchivo);
+            }
+
             header("Location: index.php?page=solicitudes&accion=ver&nro={$nro}&ok=1");
             exit;
         } catch (Exception $e) {

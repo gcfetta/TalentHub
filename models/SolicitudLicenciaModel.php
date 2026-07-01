@@ -216,4 +216,13 @@ class SolicitudLicenciaModel {
         $stmt->execute();
         return (int)$stmt->fetchColumn() > 0;
     }
+
+    // Guarda la referencia del certificado adjunto a una solicitud
+    public function agregarDocumento(int $nro, string $tipo_documento, string $archivo_path): void {
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO Documento_Licencia (nro_solicitud, tipo_documento, archivo_path)
+            VALUES (?, ?, ?)"
+        );
+        $stmt->execute([$nro, $tipo_documento, $archivo_path]);
+    }
 }

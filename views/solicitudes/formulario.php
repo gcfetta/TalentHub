@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
 <?php endif; ?>
 
 <div class="card card-form-wrapper">
-    <form method="POST" action="index.php?page=solicitudes&accion=guardar" class="form-container">
+    <form method="POST" action="index.php?page=solicitudes&accion=guardar" class="form-container" enctype="multipart/form-data">
 
         <div class="form-grid-2">
             <?php if (in_array($_SESSION['rol'], ['Administrador', 'RRHH', 'Supervisor'])): ?>
@@ -110,6 +110,15 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
                        placeholder="Opcional..."
                        value="<?= htmlspecialchars($_POST['observacion'] ?? '') ?>">
             </div>
+        </div>
+
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label>Certificado (PDF)</label>
+                <input type="file" name="certificado" accept="application/pdf" class="form-control">
+                <small style="color: var(--text-muted); display:block; margin-top:0.3rem;">Máx. 5MB. Solo formato PDF.</small>
+            </div>
+            <div class="form-group"></div>
         </div>
 
         <div class="form-actions">
