@@ -184,6 +184,33 @@ CREATE TABLE Usuario (
 );
 
 -- ============================================================
+--  BLOQUE 6.1 – Índices explícitos
+--  Contexto PDF: arquitectura basada en B-Tree explícitos para
+--  acelerar los JOIN/filtros que usan las vistas y procedimientos.
+--  Nota: MySQL/InnoDB ya indexa PK y columnas FK automáticamente;
+--  estos son adicionales, sobre columnas de filtro que NO son FK.
+-- ============================================================
+
+-- v_empleados_resumen filtra por Historial_Cargo.fecha_hasta IS NULL
+-- (cargo vigente) para cada legajo. Sin índice, es un scan completo.
+CREATE INDEX idx_historial_legajo_vigente
+    ON Historial_Cargo (legajo, fecha_hasta);
+
+-- v_solicitudes_estado_actual y cambiar_estado_solicitud hacen
+-- MAX(auditoria_id) filtrando por nro_solicitud repetidamente.
+CREATE INDEX idx_auditoria_solicitud
+    ON Auditoria_Estado_Solicitud (nro_solicitud, auditoria_id);
+
+-- registrar_solicitud_licencia filtra por legajo + tipo_lic_cod +
+-- YEAR(fecha_inicio) para calcular días usados en el año.
+CREATE INDEX idx_solicitud_legajo_tipo_fecha
+    ON Solicitud_Licencia (legajo, tipo_lic_cod, fecha_inicio);
+
+-- Filtro muy frecuente en listados: empleados activos por depto.
+CREATE INDEX idx_empleado_activo_depto
+    ON Empleado (activo, depto_cod);
+
+-- ============================================================
 --  BLOQUE 7 – Funciones almacenadas
 --  Contexto PDF: "Caso TalentHub – Cálculo de Antigüedad"
 --  Van ANTES de procedimientos y vistas que las invocan.
