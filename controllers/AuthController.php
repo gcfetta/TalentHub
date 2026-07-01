@@ -85,6 +85,33 @@ class AuthController {
         require_once __DIR__ . '/../views/auth/activar_cuenta.php';
     }
 
+    public function cambiarPassword(): void {
+        $error = '';
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $actual = trim($_POST['actual'] ?? '');
+            $nueva  = trim($_POST['nueva'] ?? '');
+            $repetir = trim($_POST['repetir'] ?? '');
+
+            if (empty($actual) || empty($nueva) || empty($repetir)) {
+                $error = 'Completá todos los campos.';
+            } elseif ($nueva !== $repetir) {
+                $error = 'Las contraseñas nuevas no coinciden.';
+            } elseif (strlen($nueva) < 6) {
+                $error = 'La nueva contraseña debe tener al menos 6 caracteres.';
+            } else {
+                $ok = $this->modelo->cambiarPassword($_SESSION['usuario_id'], $actual, $nueva);
+                if ($ok) {
+                    header('Location: index.php?page=dashboard');
+                    exit;
+                }
+                $error = 'La contraseña actual es incorrecta.';
+            }
+        }
+
+        require_once __DIR__ . '/../views/auth/cambiar_password.php';
+    }
+
     public function logout(): void {
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {

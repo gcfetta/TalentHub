@@ -1,13 +1,12 @@
 <?php
-// views/auth/login.php
-$motivo = $_GET['motivo'] ?? '';
+// views/auth/activar_cuenta.php
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TalentHub — Ingresar</title>
+    <title>TalentHub — Activar cuenta</title>
     <link rel="stylesheet" href="/TalentHub/public/css/style.css">
     <style>
         body {
@@ -21,7 +20,6 @@ $motivo = $_GET['motivo'] ?? '';
             position: relative;
             overflow: hidden;
         }
-        /* Blobs decorativos, como en el diseño de Figma */
         body::before, body::after {
             content: "";
             position: fixed;
@@ -60,26 +58,12 @@ $motivo = $_GET['motivo'] ?? '';
             font-size: 1.3rem;
             box-shadow: 0 8px 18px -6px rgba(124, 58, 237, 0.45);
         }
-        .login-box h1 {
-            color: #1e1b4b;
-            margin: 0;
-            font-size: 1.3rem;
-            font-weight: 800;
-        }
-        .login-box p.sub {
-            color: #6b7280;
-            margin: 0.15rem 0 0;
-            font-size: 0.78rem;
-        }
-        .form-group {
-            margin-bottom: 1.1rem;
-        }
+        .login-box h1 { color: #1e1b4b; margin: 0; font-size: 1.3rem; font-weight: 800; }
+        .login-box p.sub { color: #6b7280; margin: 0.15rem 0 0; font-size: 0.78rem; }
+        .form-group { margin-bottom: 1.1rem; }
         .form-group label {
-            display: block;
-            color: #1e1b4b;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 0.4rem;
+            display: block; color: #1e1b4b; font-size: 0.85rem;
+            font-weight: 700; margin-bottom: 0.4rem;
         }
         .form-group input {
             width: 100%;
@@ -113,9 +97,9 @@ $motivo = $_GET['motivo'] ?? '';
             margin-top: 0.4rem;
             box-shadow: 0 8px 18px -6px rgba(124, 58, 237, 0.4);
         }
-        .btn-login:hover   { background: #6d28d9; }
-        .btn-login:active  { transform: scale(0.98); }
-        .login-box form > a {
+        .btn-login:hover  { background: #6d28d9; }
+        .btn-login:active { transform: scale(0.98); }
+        .login-box form > a, .login-box > a {
             display: block;
             text-align: center;
             margin-top: 1rem;
@@ -131,55 +115,43 @@ $motivo = $_GET['motivo'] ?? '';
             font-weight: 500;
         }
         .alert-error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
-        .alert-warning { background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; }
-        .credenciales {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: #ede9fe;
-            border-radius: 14px;
-            font-size: 0.78rem;
-            color: #5b21b6;
-        }
-        .credenciales strong { color: #5b21b6; }
+        .alert-success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
     </style>
 </head>
 <body>
 <div class="login-box">
     <div class="brand-row">
-        <div class="brand-mark">⭐</div>
+        <div class="brand-mark">🔑</div>
         <div>
-            <h1>TalentHub</h1>
-            <p class="sub">Sistema de Recursos Humanos — U. Champagnat</p>
+            <h1>Activar cuenta</h1>
+            <p class="sub">Ingresá tu legajo y el mail registrado en RRHH</p>
         </div>
     </div>
-
-    <?php if ($motivo === 'timeout'): ?>
-        <div class="alert alert-warning">Tu sesión expiró por inactividad.</div>
-    <?php endif; ?>
 
     <?php if (!empty($error)): ?>
         <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
 
-    <form method="POST" action="index.php?page=login">
-        <div class="form-group">
-            <label for="username">Usuario</label>
-            <input type="number" id="legajo" name="legajo" 
-                    placeholder="Ingresá tu legajo" required autofocus>
+    <?php if ($ok): ?>
+        <div class="alert alert-success">
+            Cuenta activada correctamente. Tu contraseña inicial es tu número de legajo.
         </div>
-        <div class="form-group">
-            <label for="password">Contraseña</label>
-            <input type="password" id="password" name="password" 
-                   placeholder="Ingresá tu contraseña" required>
-        </div>
-        <button type="submit" class="btn-login">Ingresar →</button>
-        <a href="index.php?page=activar_cuenta">¿Todavía no activaste tu cuenta?</a>
-    </form>
-
-    <div class="credenciales">
-        <strong>Usuarios de prueba:</strong><br>
-        admin / admin123 &nbsp;·&nbsp; rrhh / rrhh123 &nbsp;·&nbsp; empleado / emp123
-    </div>
+        <a href="index.php?page=login">Ir a iniciar sesión →</a>
+    <?php else: ?>
+        <form method="POST" action="index.php?page=activar_cuenta">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+            <div class="form-group">
+                <label for="legajo">Legajo</label>
+                <input type="number" id="legajo" name="legajo" placeholder="Ingresá tu legajo" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="mail">Mail</label>
+                <input type="email" id="mail" name="mail" placeholder="Mail registrado en RRHH" required>
+            </div>
+            <button type="submit" class="btn-login">Activar cuenta →</button>
+            <a href="index.php?page=login">Volver a iniciar sesión</a>
+        </form>
+    <?php endif; ?>
 </div>
 </body>
 </html>

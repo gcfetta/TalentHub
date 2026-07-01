@@ -41,4 +41,24 @@ class UsuarioModel {
 
         return (int)$this->pdo->query("SELECT @usuario_id")->fetchColumn();
     }
+
+    // Verifica la contraseña actual y guarda la nueva, limpiando el flag de "debe cambiar"
+    public function cambiarPassword(int $usuario_id, string $actual, string $nueva): bool {
+        $stmt = $this->pdo->prepare("SELECT password_hash FROM Usuario WHERE usuario_id = :id LIMIT 1");
+        $stmt->execute([':id' => $usuario_id]);
+        $hash = $stmt->fetchColumn();
+
+        if (!$hash || !password_verify($actual, $hash)) {
+            return false;
+        }
+
+        $nuevo_hash = password_hash($nueva, PASSWORD_DEFAULT);
+        $upd = $this->pdo->prepare("
+            UPDATE Usuario
+            SET password_hash = :hash, debe_cambiar_password = 0
+            WHERE usuario_id = :id
+        ");
+        $upd->execute([':hash' => $nuevo_hash, ':id' => $usuario_id]);
+        return true;
+    }
 }
