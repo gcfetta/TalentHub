@@ -175,11 +175,6 @@ $motivo = $_GET['motivo'] ?? '';
         <button type="submit" class="btn-login">Ingresar →</button>
         <a href="index.php?page=activar_cuenta">¿Todavía no activaste tu cuenta?</a>
     </form>
-
-    <div class="credenciales">
-        <strong>Usuarios de prueba:</strong><br>
-        admin / admin123 &nbsp;·&nbsp; rrhh / rrhh123 &nbsp;·&nbsp; empleado / emp123
-    </div>
 </div>
 </body>
 </html>
