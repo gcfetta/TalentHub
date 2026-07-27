@@ -146,18 +146,21 @@ class EmpleadoController {
                     $pdo = $this->modelo->getPdo();
                     $hoy = date('Y-m-d');
 
-                    if ($cargo_previo !== null) {
-                        $pdo->prepare(
-                            "UPDATE Historial_Cargo SET fecha_hasta = ?
-                            WHERE legajo = ? AND cargo_cod = ? AND fecha_hasta IS NULL"
-                        )->execute([$hoy, $legajo, $cargo_previo]);
-                    }
-
                     if ($cargo_cod !== null) {
+                        // El cierre de la fila anterior en Historial_Cargo (fecha_hasta)
+                        // lo hace tr_cerrar_cargo_anterior (BEFORE INSERT).
                         $pdo->prepare(
                             "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde)
                             VALUES (?, ?, ?)"
                         )->execute([$legajo, $cargo_cod, $hoy]);
+                    } elseif ($cargo_previo !== null) {
+                        // Se quita el cargo sin asignar uno nuevo: no hay INSERT
+                        // que dispare el trigger, así que acá sí hace falta cerrar
+                        // la fila manualmente.
+                        $pdo->prepare(
+                            "UPDATE Historial_Cargo SET fecha_hasta = ?
+                            WHERE legajo = ? AND cargo_cod = ? AND fecha_hasta IS NULL"
+                        )->execute([$hoy, $legajo, $cargo_previo]);
                     }
                 }
 
