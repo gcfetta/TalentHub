@@ -70,8 +70,6 @@ class EmpleadoController {
             exit;
         }
 
-        error_log('POST recibido: ' . print_r($_POST, true)); // TEMPORAL - borrar después
-
         $legajo   = (int)($_POST['legajo']   ?? 0);
         $es_nuevo = !empty($_POST['es_nuevo']);
 
@@ -193,26 +191,14 @@ class EmpleadoController {
     }
 
     private function exportarCSV(): void {
-        $pdo = $this->modelo->getPdo();
-        $stmt = $pdo->query(
-            "SELECT e.legajo,
-                    CONCAT(e.nombre, ' ', e.apellido) AS empleado,
-                    c.nombre AS cargo,
-                    c.banda_salarial_min,
-                    c.banda_salarial_max,
-                    calcular_antiguedad(e.fecha_ingreso) AS anios_antiguedad
-             FROM Empleado e
-             LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
-             LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
-             WHERE e.activo = 1"
-        );
+        $filas = $this->modelo->obtenerReporteSueldos();
 
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=reporte_sueldos_talenthub.csv');
 
         $out = fopen('php://output', 'w');
         fputcsv($out, ['legajo','empleado','cargo','banda_salarial_min','banda_salarial_max','anios_antiguedad']);
-        while ($fila = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        foreach ($filas as $fila) {
             fputcsv($out, $fila);
         }
         fclose($out);

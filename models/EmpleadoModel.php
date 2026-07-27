@@ -201,4 +201,51 @@ class EmpleadoModel {
         $stmt->execute([$cargo_cod]);
         return (int)$stmt->fetchColumn() === 1;
     }
+
+    // Alta de historial al crear un empleado con cargo inicial
+    public function registrarCargoInicial(int $legajo, int $cargo_cod, string $fecha_desde): void {
+        $stmt = $this->pdo->prepare(
+            "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde) VALUES (?, ?, ?)"
+        );
+        $stmt->execute([$legajo, $cargo_cod, $fecha_desde]);
+    }
+
+    // Cierra el cargo vigente (fecha_hasta) y abre el nuevo, en una transacción
+    public function cambiarCargo(int $legajo, ?int $cargo_previo, ?int $cargo_nuevo, string $fecha): void {
+        $this->pdo->beginTransaction();
+        try {
+            if ($cargo_previo !== null) {
+                $this->pdo->prepare(
+                    "UPDATE Historial_Cargo SET fecha_hasta = ?
+                     WHERE legajo = ? AND cargo_cod = ? AND fecha_hasta IS NULL"
+                )->execute([$fecha, $legajo, $cargo_previo]);
+            }
+            if ($cargo_nuevo !== null) {
+                $this->pdo->prepare(
+                    "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde) VALUES (?, ?, ?)"
+                )->execute([$legajo, $cargo_nuevo, $fecha]);
+            }
+            $this->pdo->commit();
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    // Reporte de sueldos para exportar (usa la función calcular_antiguedad)
+    public function obtenerReporteSueldos(): array {
+        $stmt = $this->pdo->query(
+            "SELECT e.legajo,
+                    CONCAT(e.nombre, ' ', e.apellido) AS empleado,
+                    c.nombre AS cargo,
+                    c.banda_salarial_min,
+                    c.banda_salarial_max,
+                    calcular_antiguedad(e.fecha_ingreso) AS anios_antiguedad
+             FROM Empleado e
+             LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
+             LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
+             WHERE e.activo = 1"
+        );
+        return $stmt->fetchAll();
+    }
 }
