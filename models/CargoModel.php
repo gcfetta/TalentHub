@@ -6,11 +6,12 @@ class CargoModel {
     public function obtenerTodos(): array {
         return $this->pdo->query("
             SELECT c.cargo_cod, c.nombre, c.banda_salarial_min, c.banda_salarial_max,
-                   nj.nombre AS nivel, nj.nivel_cod,
-                   COUNT(hc.historial_id) AS empleados_activos
+                nj.nombre AS nivel, nj.nivel_cod,
+                COUNT(hc.historial_id) AS empleados_activos
             FROM Cargo c
             JOIN Nivel_Jerarquico nj ON nj.nivel_cod = c.nivel_cod
             LEFT JOIN Historial_Cargo hc ON hc.cargo_cod = c.cargo_cod AND hc.fecha_hasta IS NULL
+            WHERE c.activo = 1
             GROUP BY c.cargo_cod, c.nombre, c.banda_salarial_min, c.banda_salarial_max, nj.nombre, nj.nivel_cod
             ORDER BY nj.nivel_cod, c.nombre
         ")->fetchAll();

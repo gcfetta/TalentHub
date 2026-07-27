@@ -6,10 +6,11 @@ class DepartamentoModel {
     public function obtenerTodos(): array {
         return $this->pdo->query("
             SELECT d.depto_cod, d.nombre, l.nombre AS localidad, l.provincia,
-                   COUNT(e.legajo) AS empleados
+                COUNT(e.legajo) AS empleados
             FROM Departamento d
             JOIN Localidad l ON l.localidad_cod = d.localidad_cod
             LEFT JOIN Empleado e ON e.depto_cod = d.depto_cod
+            WHERE d.activo = 1
             GROUP BY d.depto_cod, d.nombre, l.nombre, l.provincia
             ORDER BY d.nombre
         ")->fetchAll();
