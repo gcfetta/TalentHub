@@ -70,6 +70,8 @@ class EmpleadoController {
             exit;
         }
 
+        error_log('POST recibido: ' . print_r($_POST, true)); // TEMPORAL - borrar después
+
         $legajo   = (int)($_POST['legajo']   ?? 0);
         $es_nuevo = !empty($_POST['es_nuevo']);
 
@@ -146,21 +148,18 @@ class EmpleadoController {
                     $pdo = $this->modelo->getPdo();
                     $hoy = date('Y-m-d');
 
-                    if ($cargo_cod !== null) {
-                        // El cierre de la fila anterior en Historial_Cargo (fecha_hasta)
-                        // lo hace tr_cerrar_cargo_anterior (BEFORE INSERT).
-                        $pdo->prepare(
-                            "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde)
-                            VALUES (?, ?, ?)"
-                        )->execute([$legajo, $cargo_cod, $hoy]);
-                    } elseif ($cargo_previo !== null) {
-                        // Se quita el cargo sin asignar uno nuevo: no hay INSERT
-                        // que dispare el trigger, así que acá sí hace falta cerrar
-                        // la fila manualmente.
+                    if ($cargo_previo !== null) {
                         $pdo->prepare(
                             "UPDATE Historial_Cargo SET fecha_hasta = ?
                             WHERE legajo = ? AND cargo_cod = ? AND fecha_hasta IS NULL"
                         )->execute([$hoy, $legajo, $cargo_previo]);
+                    }
+
+                    if ($cargo_cod !== null) {
+                        $pdo->prepare(
+                            "INSERT INTO Historial_Cargo (legajo, cargo_cod, fecha_desde)
+                            VALUES (?, ?, ?)"
+                        )->execute([$legajo, $cargo_cod, $hoy]);
                     }
                 }
 
@@ -194,14 +193,26 @@ class EmpleadoController {
     }
 
     private function exportarCSV(): void {
-        $filas = $this->modelo->obtenerReporteSueldos();
+        $pdo = $this->modelo->getPdo();
+        $stmt = $pdo->query(
+            "SELECT e.legajo,
+                    CONCAT(e.nombre, ' ', e.apellido) AS empleado,
+                    c.nombre AS cargo,
+                    c.banda_salarial_min,
+                    c.banda_salarial_max,
+                    calcular_antiguedad(e.fecha_ingreso) AS anios_antiguedad
+             FROM Empleado e
+             LEFT JOIN Historial_Cargo hc ON hc.legajo = e.legajo AND hc.fecha_hasta IS NULL
+             LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
+             WHERE e.activo = 1"
+        );
 
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=reporte_sueldos_talenthub.csv');
 
         $out = fopen('php://output', 'w');
         fputcsv($out, ['legajo','empleado','cargo','banda_salarial_min','banda_salarial_max','anios_antiguedad']);
-        foreach ($filas as $fila) {
+        while ($fila = $stmt->fetch(PDO::FETCH_ASSOC)) {
             fputcsv($out, $fila);
         }
         fclose($out);
