@@ -48,7 +48,7 @@ require_once __DIR__ . '/../../views/layout/sidebar.php';
 <div class="card">
     <div class="card-header">
         <h2>Historial de evaluaciones</h2>
-        <?php if (in_array($_SESSION['rol'], ['Administrador', 'RRHH', 'Supervisor'])): ?>
+        <?php if ($puedeCrear): ?>
             <a href="index.php?page=evaluaciones&accion=nueva" class="btn">+ Nueva evaluación</a>
         <?php endif; ?>
     </div>

@@ -98,11 +98,21 @@ class EvaluacionModel {
     }
 
     // Para poblar select de empleados
-    public function obtenerEmpleados(): array {
-        return $this->pdo->query(
-            "SELECT legajo, CONCAT(apellido, ', ', nombre) AS nombre_completo
-             FROM Empleado ORDER BY apellido"
-        )->fetchAll();
+    public function obtenerEmpleados(?int $supervisor_legajo = null): array {
+        $sql = "SELECT legajo, CONCAT(apellido, ', ', nombre) AS nombre_completo
+                FROM Empleado
+                WHERE activo = 1";
+        if ($supervisor_legajo !== null) {
+            $sql .= " AND supervisor_legajo = :supervisor";
+        }
+        $sql .= " ORDER BY apellido";
+
+        $stmt = $this->pdo->prepare($sql);
+        if ($supervisor_legajo !== null) {
+            $stmt->bindValue(':supervisor', $supervisor_legajo, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     // Promedio de puntajes de un empleado
@@ -124,5 +134,37 @@ class EvaluacionModel {
             FROM v_ranking_evaluaciones
             ORDER BY promedio_puntaje DESC
         ")->fetchAll();
+    }
+
+    // ¿Esta persona tiene al menos un subordinado a cargo?
+    public function tieneSubordinados(int $legajo): bool {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM Empleado WHERE supervisor_legajo = :legajo"
+        );
+        $stmt->execute([':legajo' => $legajo]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    // Evaluaciones de uno mismo + de los subordinados directos
+    public function obtenerPropiasYDeSubordinados(int $legajo): array {
+        $sql = "
+            SELECT ed.evaluacion_id, ed.periodo, ed.puntaje,
+                   ed.fecha_evaluacion, ed.observaciones,
+                   e.legajo, e.nombre, e.apellido,
+                   ev.nombre AS eval_nombre, ev.apellido AS eval_apellido,
+                   c.nombre AS cargo
+            FROM Evaluacion_Desempeno ed
+            JOIN Empleado e  ON e.legajo  = ed.legajo
+            JOIN Empleado ev ON ev.legajo = ed.evaluador_legajo
+            LEFT JOIN Historial_Cargo hc
+              ON hc.legajo   = ed.legajo
+             AND hc.fecha_hasta IS NULL
+            LEFT JOIN Cargo c ON c.cargo_cod = hc.cargo_cod
+            WHERE ed.legajo = :legajo OR e.supervisor_legajo = :legajo
+            ORDER BY ed.fecha_evaluacion DESC, ed.evaluacion_id DESC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':legajo' => $legajo]);
+        return $stmt->fetchAll();
     }
 }

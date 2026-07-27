@@ -23,15 +23,23 @@ class EvaluacionController {
     }
 
     private function listado(): void {
-        $rol    = $_SESSION['rol'];
-        $legajo = (int)$_SESSION['legajo'];
+        $legajo      = (int)$_SESSION['legajo'];
+        $esAdminRRHH = in_array($_SESSION['rol'], ['Administrador', 'RRHH']);
+        $tieneACargo = $this->modelo->tieneSubordinados($legajo);
 
-        $filtro = in_array($rol, ['Administrador', 'RRHH', 'Supervisor']) ? null : $legajo;
-        $evaluaciones = $this->modelo->obtenerTodas($filtro);
+        if ($esAdminRRHH) {
+            $evaluaciones = $this->modelo->obtenerTodas(null);
+            $ranking      = $this->modelo->obtenerRanking();
+        } elseif ($tieneACargo) {
+            // Ve las suyas + las de la gente que tiene a cargo, nada más
+            $evaluaciones = $this->modelo->obtenerPropiasYDeSubordinados($legajo);
+            $ranking      = [];
+        } else {
+            $evaluaciones = $this->modelo->obtenerTodas($legajo);
+            $ranking      = [];
+        }
 
-        $ranking = in_array($rol, ['Administrador', 'RRHH', 'Supervisor'])
-            ? $this->modelo->obtenerRanking()
-            : [];
+        $puedeCrear = $esAdminRRHH || $tieneACargo;
 
         require_once __DIR__ . '/../views/evaluaciones/listado.php';
     }
@@ -57,12 +65,15 @@ class EvaluacionController {
     }
 
     private function formulario(): void {
-        // Solo RRHH, Admin y Supervisor pueden crear evaluaciones
-        if (!in_array($_SESSION['rol'], ['Administrador', 'RRHH', 'Supervisor'])) {
+        $legajo      = (int)$_SESSION['legajo'];
+        $esAdminRRHH = in_array($_SESSION['rol'], ['Administrador', 'RRHH']);
+
+        if (!$esAdminRRHH && !$this->modelo->tieneSubordinados($legajo)) {
             header('Location: index.php?page=evaluaciones');
             exit;
         }
-        $empleados = $this->modelo->obtenerEmpleados();
+
+        $empleados = $this->modelo->obtenerEmpleados($esAdminRRHH ? null : $legajo);
         $error     = '';
         require_once __DIR__ . '/../views/evaluaciones/formulario.php';
     }
@@ -73,7 +84,10 @@ class EvaluacionController {
             exit;
         }
 
-        if (!in_array($_SESSION['rol'], ['Administrador', 'RRHH', 'Supervisor'])) {
+        $legajoSesion = (int)$_SESSION['legajo'];
+        $esAdminRRHH  = in_array($_SESSION['rol'], ['Administrador', 'RRHH']);
+
+        if (!$esAdminRRHH && !$this->modelo->tieneSubordinados($legajoSesion)) {
             header('Location: index.php?page=evaluaciones');
             exit;
         }
@@ -85,19 +99,20 @@ class EvaluacionController {
         $fecha    = $_POST['fecha_evaluacion'] ?? '';
         $error    = '';
 
-        // Validaciones
         if (!$legajo || !$periodo || $puntaje === '' || !$fecha) {
             $error = 'Completá todos los campos obligatorios.';
         } elseif ((float)$puntaje < 0 || (float)$puntaje > 10) {
             $error = 'El puntaje debe estar entre 0 y 10.';
-        } elseif ($legajo == (int)$_SESSION['legajo']) {
+        } elseif ($legajo == $legajoSesion) {
             $error = 'No podés evaluarte a vos mismo.';
         } elseif ($this->modelo->existePeriodo($legajo, $periodo)) {
             $error = "Ya existe una evaluación para ese empleado en el período «{$periodo}».";
+        } elseif (!$esAdminRRHH && !$this->modelo->esSupervisorDe($legajoSesion, $legajo)) {
+            $error = 'No podés evaluar a un empleado que no está a tu cargo.';
         }
 
         if ($error) {
-            $empleados = $this->modelo->obtenerEmpleados();
+            $empleados = $this->modelo->obtenerEmpleados($esAdminRRHH ? null : $legajoSesion);
             require_once __DIR__ . '/../views/evaluaciones/formulario.php';
             return;
         }
@@ -107,7 +122,7 @@ class EvaluacionController {
             ':periodo'           => $periodo,
             ':puntaje'           => number_format((float)$puntaje, 2, '.', ''),
             ':observaciones'     => $obs ?: null,
-            ':evaluador_legajo'  => (int)$_SESSION['legajo'],
+            ':evaluador_legajo'  => $legajoSesion,
             ':fecha_evaluacion'  => $fecha,
         ];
 
@@ -117,7 +132,7 @@ class EvaluacionController {
             exit;
         } catch (Exception $e) {
             $error     = 'Error al guardar: ' . $e->getMessage();
-            $empleados = $this->modelo->obtenerEmpleados();
+            $empleados = $this->modelo->obtenerEmpleados($esAdminRRHH ? null : $legajoSesion);
             require_once __DIR__ . '/../views/evaluaciones/formulario.php';
         }
     }
